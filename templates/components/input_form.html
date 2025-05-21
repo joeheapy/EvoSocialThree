@@ -1,0 +1,53 @@
+<div class="hero">
+  <div class="hero-content">
+    <div class="step-heading">
+      <span class="step-label-dark">Step 1</span>
+      <h1>What's the (social and systemic) problem?</h1>
+    </div>
+    <form id="problemForm" method="POST" action="/submit" class="spinner-form">
+      <div class="textarea-container">
+        <textarea
+          id="problemInput"
+          name="problem"
+          required
+          minlength="75"
+          maxlength="300"
+          placeholder="Describe the problem..."
+        >
+{{ results['problem'] }}</textarea
+        >
+        <div class="character-count">
+          <span id="charCount">{{ results['problem']|length }}</span>/300
+          characters (75 minimum)
+        </div>
+      </div>
+      <div class="form-footer">
+        <button type="submit" class="generate-btn">Infer Actors</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Original script still needed for character count -->
+<script>
+  const textarea = document.getElementById('problemInput')
+  const charCount = document.getElementById('charCount')
+
+  // Initialize the character count
+  charCount.textContent = textarea.value.length
+
+  textarea.addEventListener('input', () => {
+    const count = textarea.value.length
+    charCount.textContent = count
+
+    // Visual feedback based on character count requirements
+    if (count < 75) {
+      charCount.className = 'invalid'
+    } else {
+      charCount.className = 'valid'
+    }
+  })
+
+  // Trigger the input event once to set initial state
+  textarea.dispatchEvent(new Event('input'))
+</script>

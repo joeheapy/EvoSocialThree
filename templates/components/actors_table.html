@@ -1,0 +1,27 @@
+<!-- filepath: /Users/joeheapy/Documents/EvoSocialOne/templates/components/actors_table.html -->
+{% if results.actors_table and results.actors_table.actors %}
+<div class="actors-table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Sector</th>
+        <th>Example Organisations/Actors</th>
+        <th>Role in Alleviating Problem</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for actor_entry in results.actors_table.actors %}
+      <tr>
+        <td>{{ actor_entry.sector }}</td>
+        <td>{{ actor_entry.example_organisations_actors }}</td>
+        <td>{{ actor_entry.role_in_alleviating_child_poverty }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif results.actors_table_error %}
+<div class="actors-table-container error">
+  <p>Could not retrieve actor information at this time.</p>
+</div>
+{% endif %}

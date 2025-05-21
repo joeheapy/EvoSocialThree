@@ -1,0 +1,2 @@
+# Default text for the problem input form
+DEFAULT_PROBLEM_TEXT = "Low-income families in the United Kingdom face significant challenges accessing and affording fresh, nutritious foods. This problem creates and perpetuates health disparities, reduces quality of life, and imposes substantial long-term costs on individuals, communities, and healthcare systems."

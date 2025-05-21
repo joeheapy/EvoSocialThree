@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <script src="{{ url_for('static', filename='js/spinner.js') }}"></script>
+    <title>EvoSocialOne</title>
+  </head>
+  <body>
+    <!-- Include spinner component at the top -->
+    {% include 'components/spinner.html' %}
+
+    <div class="top-bar"></div>
+    <header class="header">
+      <div class="header-content">
+        <a href="#" class="logo">EvoSocialOne</a>
+      </div>
+    </header>
+
+    <div class="hero-background">
+      <div class="main-container no-padding">
+        {% include 'components/input_form.html' %}
+      </div>
+    </div>
+
+    <main class="main-container">
+      {% if results.actors_table or results.actors_table_error %}
+      <section id="step-2-actors-analysis" class="content-section">
+        <div class="step-heading">
+          <span class="step-label-light">Step 2</span>
+          <h2>Key Organisations &amp; Actors</h2>
+        </div>
+        {% include 'components/actors_table.html' %}
+      </section>
+      {% endif %}
+      <!-- Additional content can go here -->
+    </main>
+  </body>
+</html>
