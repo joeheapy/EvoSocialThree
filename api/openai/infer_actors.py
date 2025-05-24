@@ -1,17 +1,35 @@
 # filepath: /Users/joeheapy/Documents/EvoSocialOne/api/openai/infer-actors.py
 import os
-from typing import List
+from typing import List, Dict
 import openai
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
-# Define the Pydantic models for the expected table structure
+# Define a dedicated Strategy model for better validation
+class Strategy(BaseModel):
+    id: str = Field(description="Strategy ID in the format '[actorID-index]' (e.g., 'CG-1')")
+    description: str = Field(description="Brief description of the strategy")
+    commitment_level: str = Field(description="Level of commitment: 'High', 'Medium', or 'Low'")
+
 class ActorEntry(BaseModel):
-    sector: str = Field(description="The sector the organisation belongs to (e.g., Central Government, Local Government, Charities/NGOs).")
+    sector: str = Field(description="The sector the organisation belongs to.")
     example_organisations_actors: str = Field(description="Specific examples of UK organisations or types of actors.")
-    role_in_alleviating_child_poverty: str = Field(description="Their specific role in alleviating the described problem. If the problem is not child poverty, adapt the role description accordingly.")
+    role_in_alleviating_child_poverty: str = Field(description="Their specific role in alleviating the described problem.")
+    actor_index: str = Field(description="Index in the format 'g=n' where n is a sequential number starting from 1.")
+    actor_id: str = Field(description="A two-character ID inferred from the sector name (e.g., 'CG' for 'Central Government').")
+    strategies: List[Strategy] = Field(description="Three evolutionary strategies for this actor, with varying levels of commitment.")
+
+    @validator('strategies')
+    def validate_strategies(cls, strategies):
+        if len(strategies) != 3:
+            raise ValueError("Each actor must have exactly 3 strategies")
+        # Check strategy IDs match pattern and have correct commitment levels
+        for i, strategy in enumerate(strategies):
+            if not strategy.id.startswith(strategies[0].id.split('-')[0]):
+                raise ValueError(f"Strategy ID prefix must match actor ID")
+        return strategies
 
 class ActorsTable(BaseModel):
     actors: List[ActorEntry] = Field(description="A list of key UK organisations and actors relevant to the problem.")
@@ -44,18 +62,42 @@ def infer_actors_from_problem(problem_description: str) -> ActorsTable | None:
         parser = PydanticOutputParser(pydantic_object=ActorsTable)
 
         prompt_template = """
-
-        You are an expert in UK social issues and organisational structures. Given the following problem description, identify the key UK organisations including government, private and social sectors, and actors that have a role to play in alleviating this problem. Always include those most impacted by the problem as a sector, for example, 'Children and families'. Focus on UK-based entities.
+        You are an expert in UK social issues, organisational structures, and Evolutionary Game Theory. Given the following problem description, identify AT LEAST 6 key UK organisations and actors that have a role in addressing this problem. Include a diverse range covering government, private sector, non-profit, and affected populations.
 
         Problem: "{problem_description}"
 
+        For each actor, provide the following:
+        1. The sector they belong to
+        2. Specific examples of UK organisations or actor types in this sector
+        3. Their role in addressing the problem
+        4. An index in the format 'g=n' where n is a sequential number starting from 1
+        5. A two-character ID derived from the sector name (e.g., 'CG' for 'Central Government')
+        6. Three distinct evolutionary strategies this actor could employ, with EXACTLY THE FOLLOWING STRUCTURE:
+
+           a. Strategy 1: Highest commitment/investment
+              - id: [actorID-1] (e.g., 'CG-1')
+              - description: [detailed description]
+              - commitment_level: "High"
+           
+           b. Strategy 2: Moderate commitment/investment
+              - id: [actorID-2] (e.g., 'CG-2')
+              - description: [detailed description]
+              - commitment_level: "Medium"
+           
+           c. Strategy 3: Minimal commitment/investment
+              - id: [actorID-3] (e.g., 'CG-3')
+              - description: [detailed description]
+              - commitment_level: "Low"
+
+        IMPORTANT: 
+        - You MUST identify AT LEAST 6 different actors/sectors
+        - Each actor MUST have exactly three strategies
+        - Each strategy MUST include an id, description, and commitment_level
+
+        Always include these key sectors if relevant to the problem: Central Government, Local Authorities, Private Sector, Charities/NGOs, Healthcare Providers, Affected Populations.
+
         Please format your answer as a JSON object that strictly adheres to the following Pydantic schema: {format_instructions}
-
-        Ensure the output contains a list of actors, where each actor has:
-
-        "sector": The sector the organisation belongs to.
-        "example_organisations_actors": Specific 'Examples' of UK organisations or types of actors.
-        "role_in_alleviating_child_poverty": Their specific role in addressing the described problem. Adapt this field name if the problem is not child poverty, but ensure the content reflects their role for the given problem. """ 
+        """
 
         # The PydanticOutputParser will use the field names from ActorEntry for the JSON keys. 
         # The description for "role_in_alleviating_child_poverty" in ActorEntry guides the LLM. 
@@ -73,6 +115,18 @@ def infer_actors_from_problem(problem_description: str) -> ActorsTable | None:
         try:
             # Separate try block for the API call specifically
             actors_table_data = chain.invoke({"problem_description": problem_description})
+            
+            # Validate minimum number of actors
+            if len(actors_table_data.actors) < 6:
+                print(f"Error: Only {len(actors_table_data.actors)} actors were identified. At least 6 are required.")
+                return None
+            
+            # Validate that all actors have exactly 3 strategies
+            for actor in actors_table_data.actors:
+                if len(actor.strategies) != 3:
+                    print(f"Error: Actor {actor.sector} has {len(actor.strategies)} strategies instead of 3")
+                    return None
+            
             print("--- LANGCHAIN/OPENAI RESPONSE (PARSED) ---") 
             print(actors_table_data) 
             print("------------------------------------------\n")
