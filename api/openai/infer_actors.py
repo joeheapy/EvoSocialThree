@@ -15,7 +15,6 @@ class Strategy(BaseModel):
 
 class ActorEntry(BaseModel):
     sector: str = Field(description="The sector the organisation belongs to.")
-    example_organisations_actors: str = Field(description="Specific examples of UK organisations or types of actors.")
     role_in_alleviating_child_poverty: str = Field(description="Their specific role in alleviating the described problem.")
     actor_index: str = Field(description="Index in the format 'g=n' where n is a sequential number starting from 1.")
     actor_id: str = Field(description="A two-character ID inferred from the sector name (e.g., 'CG' for 'Central Government').")
@@ -68,26 +67,37 @@ def infer_actors_from_problem(problem_description: str) -> ActorsTable | None:
 
         For each actor, provide the following:
         1. The sector they belong to
-        2. Specific examples of UK organisations or actor types in this sector
-        3. Their role in addressing the problem
-        4. An index in the format 'g=n' where n is a sequential number starting from 1
-        5. A two-character ID derived from the sector name (e.g., 'CG' for 'Central Government')
-        6. Three distinct evolutionary strategies this actor could employ, with EXACTLY THE FOLLOWING STRUCTURE:
+        2. Their role in addressing the problem
+        3. An index in the format 'g=n' where n is a sequential number starting from 1
+        4. A two-character ID derived from the sector name (e.g., 'CG' for 'Central Government')
+        5. Three GENERIC evolutionary strategies representing different approaches to the system, following this structure:
 
-           a. Strategy 1: Highest commitment/investment
+           a. Strategy 1: High commitment/investment approach
               - id: [actorID-1] (e.g., 'CG-1')
-              - description: [detailed description]
+              - description: [general approach representing maximum engagement with the system]
               - commitment_level: "High"
            
-           b. Strategy 2: Moderate commitment/investment
+           b. Strategy 2: Moderate commitment/investment approach
               - id: [actorID-2] (e.g., 'CG-2')
-              - description: [detailed description]
+              - description: [general approach representing partial engagement with the system]
               - commitment_level: "Medium"
            
-           c. Strategy 3: Minimal commitment/investment
+           c. Strategy 3: Minimal commitment/investment approach
               - id: [actorID-3] (e.g., 'CG-3')
-              - description: [detailed description]
+              - description: [general approach representing minimal engagement with the system]
               - commitment_level: "Low"
+
+        IMPORTANT STRATEGY GUIDELINES:
+        - Strategies should represent GENERAL APPROACHES rather than specific implementations
+        - Focus on cooperation levels, resource allocation patterns, or engagement styles
+        - Each strategy should represent a fundamentally different behavioral pattern, not just different intensities of the same approach
+        - Describe strategies in terms of how actors engage with the entire system rather than specific solutions
+
+        Examples of generic strategies in evolutionary game theory:
+        - Full cooperation vs. selective cooperation vs. non-cooperation
+        - Proactive system-wide investment vs. reactive targeted intervention vs. minimal compliance
+        - Information sharing vs. selective disclosure vs. information withholding
+        - Long-term system focus vs. medium-term balanced approach vs. short-term self-interest
 
         IMPORTANT: 
         - You MUST identify AT LEAST 6 different actors/sectors
