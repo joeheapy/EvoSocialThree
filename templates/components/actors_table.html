@@ -4,17 +4,24 @@
   <table>
     <thead>
       <tr>
-        <th>Sector</th>
-        <th>Example Organisations/Actors</th>
-        <th>Role in Alleviating Problem</th>
+        <th>Actor (population)</th>
+        <th>Index</th>
+        <th>System Role</th>
+        <th>Strategies</th>
       </tr>
     </thead>
     <tbody>
       {% for actor_entry in results.actors_table.actors %}
       <tr>
         <td>{{ actor_entry.sector }}</td>
-        <td>{{ actor_entry.example_organisations_actors }}</td>
+        <td>{{ actor_entry.actor_index }}</td>
         <td>{{ actor_entry.role_in_alleviating_child_poverty }}</td>
+        <td>
+          {% for strategy in actor_entry.strategies %}
+          <strong>{{ strategy.id }}</strong> {{ strategy.description }}
+          <em>({{ strategy.commitment_level }})</em>{% if not loop.last %};<br />{%
+          endif %} {% endfor %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
