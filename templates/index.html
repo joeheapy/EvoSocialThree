@@ -32,7 +32,8 @@
     </div>
 
     <main class="main-container">
-      {% if results.actors_table or results.actors_table_error %}
+      <!-- Step 2: Actors Analysis - Show if problem has been submitted -->
+      {% if results.problem_submitted %}
       <section id="step-2-actors-analysis" class="content-section">
         <div class="step-heading">
           <span class="step-label-light">Step 2</span>
@@ -40,8 +41,10 @@
         </div>
         {% include 'components/actors_table.html' %}
       </section>
-      {% endif %} {% if results.outcome_targets or results.outcome_targets_error
-      %}
+      {% endif %}
+
+      <!-- Step 3: Outcome Targets - Only show if actors analysis is complete -->
+      {% if results.actors_table %}
       <section id="step-3-outcome-targets" class="content-section">
         <div class="step-heading">
           <span class="step-label-light">Step 3</span>

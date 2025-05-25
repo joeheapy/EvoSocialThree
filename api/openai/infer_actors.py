@@ -1,4 +1,4 @@
-# filepath: /Users/joeheapy/Documents/EvoSocialOne/api/openai/infer-actors.py
+# filepath: /Users/joeheapy/Documents/EvoSocialOne/api/openai/infer_actors.py
 import os
 from typing import List, Dict
 import openai

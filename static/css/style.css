@@ -187,23 +187,6 @@ p {
   margin-top: 30px;
 }
 
-.generate-btn {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  font-family: 'Lexend', sans-serif;
-  font-size: 16px;
-  font-weight: 400;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.generate-btn:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
 /* Step heading and label styles */
 .step-heading {
   display: flex;
@@ -419,6 +402,69 @@ p {
   margin: 0;
   color: #dc3545;
   font-weight: 500;
+}
+
+/* Analysis Button Styles */
+.analysis-trigger {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.analysis-trigger.next-step {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.analysis-form {
+  display: inline-block;
+}
+
+.analysis-button {
+  background-color: var(--jrf-blue);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-family: 'Lexend', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  min-width: 200px;
+}
+
+.analysis-button:hover {
+  background-color: var(--jrf-purple);
+}
+
+.analysis-button:active {
+  background-color: var(--jrf-purple-dark);
+}
+
+.analysis-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Special styling for form submit button in hero section */
+.hero .analysis-button {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  min-width: auto;
+}
+
+.hero .analysis-button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Error state retry buttons */
+.error .analysis-button {
+  background-color: #dc3545;
+}
+
+.error .analysis-button:hover {
+  background-color: #c82333;
 }
 
 /* Responsive adjustments for mobile */

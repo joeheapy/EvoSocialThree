@@ -16,6 +16,7 @@ app = Flask(__name__)
 # Initialize with default text and placeholder for actors table
 results = {
     'problem': DEFAULT_PROBLEM_TEXT,
+    'problem_submitted': False,  # New flag to track if form has been submitted
     'actors_table': None,
     'actors_table_error': False,
     'outcome_targets': None,
@@ -24,7 +25,7 @@ results = {
 
 @app.route('/', methods=['GET'])
 def hello_world():
-    return render_template('index.html', results=results)
+    return render_template('index.html', results=results, DEFAULT_PROBLEM_TEXT=DEFAULT_PROBLEM_TEXT)
 
 @app.route('/submit', methods=['POST'])
 def submit_problem():
@@ -37,30 +38,46 @@ def submit_problem():
         print(problem)
         print("------------------------\n")
         
-        # Store the problem in our results dictionary
+        # Store the problem in our results dictionary and reset all analysis results
         results['problem'] = problem
-        results['actors_table'] = None # Reset previous results
+        results['problem_submitted'] = True  # Mark that the form has been submitted
+        results['actors_table'] = None
         results['actors_table_error'] = False
-        results['outcome_targets'] = None # Reset previous results
+        results['outcome_targets'] = None
         results['outcome_targets_error'] = False
         
-        # Infer actors using LangChain/OpenAI
-        if problem: # Only infer if there's a problem description
-            actors_data = infer_actors_from_problem(problem)
-            if actors_data:
-                results['actors_table'] = actors_data
-            else:
-                results['actors_table_error'] = True
-            
-            # Infer outcome targets using LangChain/OpenAI
-            outcome_targets_data = infer_outcome_targets_from_problem(problem)
-            if outcome_targets_data:
-                results['outcome_targets'] = outcome_targets_data
-            else:
-                results['outcome_targets_error'] = True
-        
-        # Redirect to the home page to display the results
+        # Redirect to the home page to display the form results
         return redirect(url_for('hello_world'))
+
+@app.route('/analyze_actors', methods=['POST'])
+def analyze_actors():
+    """Endpoint specifically for analyzing actors"""
+    problem = results.get('problem', '')
+    if problem:
+        print("\n--- ANALYZING ACTORS ---")
+        actors_data = infer_actors_from_problem(problem)
+        if actors_data:
+            results['actors_table'] = actors_data
+            results['actors_table_error'] = False
+        else:
+            results['actors_table_error'] = True
+    
+    return redirect(url_for('hello_world'))
+
+@app.route('/analyze_outcome_targets', methods=['POST'])
+def analyze_outcome_targets():
+    """Endpoint specifically for analyzing outcome targets"""
+    problem = results.get('problem', '')
+    if problem:
+        print("\n--- ANALYZING OUTCOME TARGETS ---")
+        outcome_targets_data = infer_outcome_targets_from_problem(problem)
+        if outcome_targets_data:
+            results['outcome_targets'] = outcome_targets_data
+            results['outcome_targets_error'] = False
+        else:
+            results['outcome_targets_error'] = True
+    
+    return redirect(url_for('hello_world'))
 
 if __name__ == '__main__':
     # Open browser in a separate thread
