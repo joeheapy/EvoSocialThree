@@ -9,7 +9,11 @@
 <!-- Show outcome targets -->
 <div class="outcome-targets-container">
   {% for target in results.outcome_targets.targets %}
-  <div class="target-card">
+  <div
+    class="target-card"
+    data-target-id="{{ loop.index0 }}"
+    onclick="toggleTargetCard(this)"
+  >
     <h3 class="target-metric">{{ target.metric_name }}</h3>
     <div class="target-progression">
       <div class="target-from">
