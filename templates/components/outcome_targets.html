@@ -17,16 +17,20 @@
         <span class="target-value">{{ target.from_value }}</span>
         <span class="target-unit">{{ target.from_unit }}</span>
       </div>
-      <div class="target-arrow">→</div>
+      <div class="target-arrow">
+        <div class="target-timeframe">
+          <strong
+            >{{ target.timeframe_years }} year{{ 's' if target.timeframe_years
+            != 1 else '' }}</strong
+          >
+        </div>
+        →
+      </div>
       <div class="target-to">
         <span class="target-label">Target</span>
         <span class="target-value">{{ target.to_value }}</span>
         <span class="target-unit">{{ target.to_unit }}</span>
       </div>
-    </div>
-    <div class="target-timeframe">
-      <strong>Timeframe:</strong> {{ target.timeframe_years }} year{{ 's' if
-      target.timeframe_years != 1 else '' }}
     </div>
     <div class="target-rationale">
       <strong>Rationale:</strong> {{ target.rationale }}

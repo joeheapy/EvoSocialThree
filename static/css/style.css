@@ -405,18 +405,20 @@ p {
 }
 
 .target-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   font-size: 28px;
   color: var(--jrf-blue);
   font-weight: bold;
-  margin: 0 20px;
+  margin: 10px 0;
 }
 
 .target-timeframe {
-  margin-bottom: 15px;
-  padding: 10px;
-  background-color: rgba(160, 215, 228, 0.1);
-  border-radius: 4px;
-  font-size: 14px;
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 0.2rem; /* Adjust spacing as needed */
 }
 
 .target-rationale {
@@ -534,6 +536,9 @@ p {
 
   .target-arrow {
     transform: rotate(90deg);
+    font-size: 28px;
+    color: var(--jrf-blue);
+    font-weight: bold;
     margin: 10px 0;
   }
 
