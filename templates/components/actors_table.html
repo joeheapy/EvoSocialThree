@@ -36,12 +36,6 @@
   </table>
 </div>
 
-<!-- Show button to trigger outcome targets analysis -->
-<div class="analysis-trigger next-step">
-  {% set action_url = url_for('analyze_outcome_targets') %} {% set button_text =
-  'Analyze Outcome Targets' %} {% set disabled = false %} {% include
-  'components/analysis_button.html' %}
-</div>
 {% elif results.actors_table_error %}
 <div class="actors-table-container error">
   <p>Could not retrieve actor information at this time.</p>

@@ -49,6 +49,25 @@ def submit_problem():
         # Redirect to the home page to display the form results
         return redirect(url_for('hello_world'))
 
+@app.route('/reset', methods=['POST'])
+def reset_app():
+    """Reset the entire application to initial state"""
+    print("\n--- RESETTING APPLICATION ---")
+    
+    # Reset all results to initial state
+    results['problem'] = DEFAULT_PROBLEM_TEXT
+    results['problem_submitted'] = False
+    results['actors_table'] = None
+    results['actors_table_error'] = False
+    results['outcome_targets'] = None
+    results['outcome_targets_error'] = False
+    
+    print("Application reset to initial state")
+    print("--------------------------------\n")
+    
+    # Redirect to home page
+    return redirect(url_for('hello_world'))
+
 @app.route('/analyze_actors', methods=['POST'])
 def analyze_actors():
     """Endpoint specifically for analyzing actors"""

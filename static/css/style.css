@@ -187,6 +187,40 @@ p {
   margin-top: 30px;
 }
 
+.form-buttons {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.reset-form {
+  margin: 0;
+}
+
+.reset-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 20px;
+  font-family: 'Lexend', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: auto;
+}
+
+.reset-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+}
+
+.reset-button:active {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
 /* Step heading and label styles */
 .step-heading {
   display: flex;
@@ -407,7 +441,7 @@ p {
 /* Analysis Button Styles */
 .analysis-trigger {
   margin: 20px 0;
-  text-align: center;
+  text-align: right;
 }
 
 .analysis-trigger.next-step {
@@ -505,6 +539,17 @@ p {
 
   .target-from,
   .target-to {
+    width: 100%;
+  }
+
+  .form-buttons {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .hero .analysis-button,
+  .reset-button {
     width: 100%;
   }
 }
