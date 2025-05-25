@@ -32,13 +32,40 @@
     </div>
 
     <main class="main-container">
-      {% if results.actors_table or results.actors_table_error %}
+      <!-- Step 2: Actors Analysis - Show if problem has been submitted -->
+      {% if results.problem_submitted %}
       <section id="step-2-actors-analysis" class="content-section">
         <div class="step-heading">
           <span class="step-label-light">Step 2</span>
           <h2>Key Organisations &amp; Actors</h2>
         </div>
+        <div>
+          <p class="step-description">
+            Identify the key organisations and actors involved in the problem.
+            This analysis will help us understand who can contribute to solving
+            the problem and how they can be engaged.
+          </p>
+        </div>
+
         {% include 'components/actors_table.html' %}
+      </section>
+      {% endif %}
+
+      <!-- Step 3: Outcome Targets - Only show if actors analysis is complete -->
+      {% if results.actors_table %}
+      <section id="step-3-outcome-targets" class="content-section">
+        <div class="step-heading">
+          <span class="step-label-light">Step 3</span>
+          <h2>Measurable Outcome Targets</h2>
+        </div>
+        <div>
+          <p class="step-description">
+            Define measurable outcome targets that can be used to track progress
+            towards solving the problem. These targets will help us evaluate the
+            effectiveness of strategies and interventions.
+          </p>
+        </div>
+        {% include 'components/outcome_targets.html' %}
       </section>
       {% endif %}
       <!-- Additional content can go here -->

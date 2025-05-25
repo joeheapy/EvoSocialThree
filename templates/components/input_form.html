@@ -22,7 +22,17 @@
         </div>
       </div>
       <div class="form-footer">
-        <button type="submit" class="generate-btn">Infer Actors</button>
+        <div class="form-buttons">
+          <button type="submit" class="analysis-button">Submit Problem</button>
+          <form
+            method="POST"
+            action="/reset"
+            class="reset-form"
+            style="display: inline"
+          >
+            <button type="submit" class="reset-button">Start Over</button>
+          </form>
+        </div>
       </div>
     </form>
   </div>
