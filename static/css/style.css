@@ -503,6 +503,40 @@ p {
   background-color: #c82333;
 }
 
+/* Sources section styling */
+.outcome-targets-sources {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid var(--jrf-dark-gray);
+}
+
+.outcome-targets-sources h4 {
+  color: var(--jrf-purple);
+  font-size: 16px;
+  margin-bottom: 15px;
+  font-weight: 500;
+}
+
+.outcome-targets-sources ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.outcome-targets-sources li {
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--jrf-text);
+}
+
+.outcome-targets-sources li:last-child {
+  border-bottom: none;
+}
+
 /* Responsive adjustments for mobile */
 @media (max-width: 768px) {
   .hero h1 {

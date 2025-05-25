@@ -103,15 +103,13 @@ def infer_actors_from_problem(problem_description: str) -> ActorsTable | None:
         - You MUST identify AT LEAST 6 different actors/sectors
         - Each actor MUST have exactly three strategies
         - Each strategy MUST include an id, description, and commitment_level
+        - Use UK English spellings. 
 
-        Always include these key sectors if relevant to the problem: Central Government, Local Authorities, Private Sector, Charities/NGOs, Healthcare Providers, Affected Populations.
+        Always include these key sectors IF relevant to the problem: Central Government, Local Authorities, Private Sector, Charities/NGOs, Healthcare Providers, Social Investors, Affected Populations.
 
         Please format your answer as a JSON object that strictly adheres to the following Pydantic schema: {format_instructions}
         """
-
-        # The PydanticOutputParser will use the field names from ActorEntry for the JSON keys. 
-        # The description for "role_in_alleviating_child_poverty" in ActorEntry guides the LLM. 
-        # The column header in the HTML can remain as per the screenshot. 
+        # Create the prompt template with the parser's format instructions
         prompt = PromptTemplate( 
             template=prompt_template, 
             input_variables=["problem_description"], 

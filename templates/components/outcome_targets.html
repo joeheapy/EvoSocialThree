@@ -14,7 +14,9 @@
     <div class="target-progression">
       <div class="target-from">
         <span class="target-label">Current</span>
-        <span class="target-value">{{ target.from_value }}</span>
+        <span class="target-value"
+          >{{ target.from_value | format_number }}</span
+        >
         <span class="target-unit">{{ target.from_unit }}</span>
       </div>
       <div class="target-arrow">
@@ -28,7 +30,7 @@
       </div>
       <div class="target-to">
         <span class="target-label">Target</span>
-        <span class="target-value">{{ target.to_value }}</span>
+        <span class="target-value">{{ target.to_value | format_number }}</span>
         <span class="target-unit">{{ target.to_unit }}</span>
       </div>
     </div>
@@ -37,6 +39,21 @@
     </div>
   </div>
   {% endfor %}
+
+  <!-- Collect all sources and display them below all cards -->
+  {% set all_sources = [] %} {% for target in results.outcome_targets.targets %}
+  {% if target.sources %} {% for source in target.sources %} {% if source not in
+  all_sources %} {% set _ = all_sources.append(source) %} {% endif %} {% endfor
+  %} {% endif %} {% endfor %} {% if all_sources %}
+  <div class="outcome-targets-sources">
+    <h4>Sources</h4>
+    <ul>
+      {% for source in all_sources %}
+      <li>{{ source }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
 </div>
 {% elif results.outcome_targets_error %}
 <div class="outcome-targets-container error">

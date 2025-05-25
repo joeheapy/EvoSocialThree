@@ -7,3 +7,6 @@
 DEFAULT_PROBLEM_TEXT = "Thousands are forced to sleep rough or rely on temporary shelters as rents rise and welfare lags. In 2024, rough sleeping in England jumped 32%, with nearly 12,000 people on London’s streets alone, undermining health, work prospects and community cohesion."
 
 # DEFAULT_PROBLEM_TEXT = "Millions live in social homes blighted by damp, mould and structural hazards. “Awaab’s Law” now obliges landlords to investigate within 14 days, yet chronic under-investment keeps many properties sub-standard, harming residents’ health and widening inequality."
+
+
+SOURCES_OF_UK_SOCIAL_DATA = "Office for National Statistics (ONS), UK Data Service, Government Departments, Department for Work and Pensions, Department for Education, Department of Health and Social Care, Ministry of Housing, Communities and Local Government Ministry of Justice,Department for Transport, Department for Business, Energy & Industrial Strategy, Home Office, The House of Commons Library Joseph Rowntree Foundation (JRF), The Resolution Foundation, Crisis UK, Shelter UK, The Trussell Trust, The National Audit Office (NAO), The Institute for Fiscal Studies (IFS), The Health Foundation, The Office for Budget Responsibility (OBR), National Centre for Social Research (NatCen)"
