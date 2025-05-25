@@ -1,0 +1,33 @@
+{% if results.outcome_targets and results.outcome_targets.targets %}
+<div class="outcome-targets-container">
+  {% for target in results.outcome_targets.targets %}
+  <div class="target-card">
+    <h3 class="target-metric">{{ target.metric_name }}</h3>
+    <div class="target-progression">
+      <div class="target-from">
+        <span class="target-label">Current</span>
+        <span class="target-value">{{ target.from_value }}</span>
+        <span class="target-unit">{{ target.from_unit }}</span>
+      </div>
+      <div class="target-arrow">→</div>
+      <div class="target-to">
+        <span class="target-label">Target</span>
+        <span class="target-value">{{ target.to_value }}</span>
+        <span class="target-unit">{{ target.to_unit }}</span>
+      </div>
+    </div>
+    <div class="target-timeframe">
+      <strong>Timeframe:</strong> {{ target.timeframe_years }} year{{ 's' if
+      target.timeframe_years != 1 else '' }}
+    </div>
+    <div class="target-rationale">
+      <strong>Rationale:</strong> {{ target.rationale }}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% elif results.outcome_targets_error %}
+<div class="outcome-targets-container error">
+  <p>Could not retrieve outcome targets at this time.</p>
+</div>
+{% endif %}

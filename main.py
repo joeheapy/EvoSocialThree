@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import html
 from config import DEFAULT_PROBLEM_TEXT
 from api.openai.infer_actors import infer_actors_from_problem
+from api.openai.infer_outcome_target import infer_outcome_targets_from_problem
 
 # Load environment variables from .env file
 load_dotenv()
@@ -16,7 +17,9 @@ app = Flask(__name__)
 results = {
     'problem': DEFAULT_PROBLEM_TEXT,
     'actors_table': None,
-    'actors_table_error': False
+    'actors_table_error': False,
+    'outcome_targets': None,
+    'outcome_targets_error': False
 }
 
 @app.route('/', methods=['GET'])
@@ -38,6 +41,8 @@ def submit_problem():
         results['problem'] = problem
         results['actors_table'] = None # Reset previous results
         results['actors_table_error'] = False
+        results['outcome_targets'] = None # Reset previous results
+        results['outcome_targets_error'] = False
         
         # Infer actors using LangChain/OpenAI
         if problem: # Only infer if there's a problem description
@@ -46,6 +51,13 @@ def submit_problem():
                 results['actors_table'] = actors_data
             else:
                 results['actors_table_error'] = True
+            
+            # Infer outcome targets using LangChain/OpenAI
+            outcome_targets_data = infer_outcome_targets_from_problem(problem)
+            if outcome_targets_data:
+                results['outcome_targets'] = outcome_targets_data
+            else:
+                results['outcome_targets_error'] = True
         
         # Redirect to the home page to display the results
         return redirect(url_for('hello_world'))

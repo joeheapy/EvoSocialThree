@@ -40,6 +40,15 @@
         </div>
         {% include 'components/actors_table.html' %}
       </section>
+      {% endif %} {% if results.outcome_targets or results.outcome_targets_error
+      %}
+      <section id="step-3-outcome-targets" class="content-section">
+        <div class="step-heading">
+          <span class="step-label-light">Step 3</span>
+          <h2>Measurable Outcome Targets</h2>
+        </div>
+        {% include 'components/outcome_targets.html' %}
+      </section>
       {% endif %}
       <!-- Additional content can go here -->
     </main>
