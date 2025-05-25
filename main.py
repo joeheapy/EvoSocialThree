@@ -12,6 +12,24 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# Add custom Jinja2 filter for number formatting
+@app.template_filter('format_number')
+def format_number(value):
+    """Format numbers with commas and handle percentages"""
+    try:
+        # Convert to float if it's a string
+        num = float(value)
+        
+        # Check if it's a percentage (between 0-100 and likely represents a percentage)
+        # You might want to adjust this logic based on your data
+        if 0 <= num <= 100 and '.' in str(value):
+            return f"{num:.1f}"
+        else:
+            # Format with commas for thousands
+            return f"{num:,.0f}"
+    except (ValueError, TypeError):
+        return str(value)
+
 # Store form results (in a real app, you'd use a database)
 # Initialize with default text and placeholder for actors table
 results = {

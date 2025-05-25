@@ -8,13 +8,32 @@
 {% elif results.outcome_targets and results.outcome_targets.targets %}
 <!-- Show outcome targets -->
 <div class="outcome-targets-container">
-  {% for target in results.outcome_targets.targets %}
-  <div class="target-card">
+  <!-- Collect all sources and display them above all cards -->
+  {% set all_sources = [] %} {% for target in results.outcome_targets.targets %}
+  {% if target.sources %} {% for source in target.sources %} {% if source not in
+  all_sources %} {% set _ = all_sources.append(source) %} {% endif %} {% endfor
+  %} {% endif %} {% endfor %} {% if all_sources %}
+  <div class="outcome-targets-sources">
+    <h4>Sources</h4>
+    <ul>
+      {% for source in all_sources %}
+      <li>{{ source }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %} {% for target in results.outcome_targets.targets %}
+  <div
+    class="target-card"
+    data-target-id="{{ loop.index0 }}"
+    onclick="toggleTargetCard(this)"
+  >
     <h3 class="target-metric">{{ target.metric_name }}</h3>
     <div class="target-progression">
       <div class="target-from">
         <span class="target-label">Current</span>
-        <span class="target-value">{{ target.from_value }}</span>
+        <span class="target-value"
+          >{{ target.from_value | format_number }}</span
+        >
         <span class="target-unit">{{ target.from_unit }}</span>
       </div>
       <div class="target-arrow">
@@ -28,7 +47,7 @@
       </div>
       <div class="target-to">
         <span class="target-label">Target</span>
-        <span class="target-value">{{ target.to_value }}</span>
+        <span class="target-value">{{ target.to_value | format_number }}</span>
         <span class="target-unit">{{ target.to_unit }}</span>
       </div>
     </div>
@@ -37,6 +56,18 @@
     </div>
   </div>
   {% endfor %}
+
+  <!-- Select System Objective Button -->
+  <div class="analysis-trigger">
+    <button
+      id="selectObjectiveButton"
+      class="analysis-button"
+      disabled
+      onclick="selectSystemObjective()"
+    >
+      Select System Objective
+    </button>
+  </div>
 </div>
 {% elif results.outcome_targets_error %}
 <div class="outcome-targets-container error">

@@ -354,6 +354,38 @@ p {
   padding: 25px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   border-left: 4px solid var(--jrf-blue);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.target-card:hover {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.target-card.active {
+  background-color: #f0f8ff;
+  border-left: 4px solid var(--jrf-purple);
+  box-shadow: 0 6px 20px rgba(21, 38, 60, 0.15);
+  transform: translateY(-5px);
+}
+
+.target-card.active .target-metric {
+  color: var(--jrf-purple);
+}
+
+.target-card.active .target-progression {
+  background-color: rgba(21, 38, 60, 0.05);
+  border: 1px solid rgba(21, 38, 60, 0.1);
+}
+
+.target-card.active .target-value {
+  color: var(--jrf-purple);
+}
+
+.target-card.active .target-arrow {
+  color: var(--jrf-purple);
 }
 
 .target-metric {
@@ -501,6 +533,40 @@ p {
 
 .error .analysis-button:hover {
   background-color: #c82333;
+}
+
+/* Sources section styling */
+.outcome-targets-sources {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid var(--jrf-dark-gray);
+}
+
+.outcome-targets-sources h4 {
+  color: var(--jrf-purple);
+  font-size: 16px;
+  margin-bottom: 15px;
+  font-weight: 500;
+}
+
+.outcome-targets-sources ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.outcome-targets-sources li {
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--jrf-text);
+}
+
+.outcome-targets-sources li:last-child {
+  border-bottom: none;
 }
 
 /* Responsive adjustments for mobile */

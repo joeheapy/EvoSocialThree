@@ -6,7 +6,9 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field, validator
+from config import SOURCES_OF_UK_SOCIAL_DATA
 
+# Define the Pydantic model for the outcome target
 class OutcomeTarget(BaseModel):
     metric_name: str = Field(description="A concise label for the outcome")
     from_value: float = Field(description="The current baseline level (number)")
@@ -15,6 +17,7 @@ class OutcomeTarget(BaseModel):
     to_unit: str = Field(description="The same unit/population, phrased consistently with from_unit")
     timeframe_years: int = Field(description="Number of years to reach the target")
     rationale: str = Field(description="1-2 sentences on why the target level and timeframe are ambitious yet plausible")
+    sources: List[str] = Field(description="List of sources or references used for baseline data and target setting")
 
 class OutcomeTargets(BaseModel):
     targets: List[OutcomeTarget] = Field(description="Three measurable outcome targets for the problem")
@@ -44,16 +47,19 @@ def infer_outcome_targets_from_problem(problem_description: str) -> OutcomeTarge
             if env_var in os.environ:
                 del os.environ[env_var]
         
-        # Use direct initialization with only the required parameters
+        # Use direct initialization with web search enabled
         llm = ChatOpenAI(
-            model_name="gpt-3.5-turbo",
-            temperature=0,
-            openai_api_key=api_key
+            model_name="gpt-4o",
+            temperature=0.3,
+            openai_api_key=api_key,
+            model_kwargs={
+                "tools": [{"type": "web_search"}]
+            }
         )
         parser = PydanticOutputParser(pydantic_object=OutcomeTargets)
 
         prompt_template = """
-        TASK: Analyse the following problem description, then draft three measurable outcome targets that a realistic national or city-level programme could aim for.
+        TASK: Analyse the following problem description, then draft three measurable outcome targets that a realistic national or city-level programme could aim for. You MUST search the web for the most recent and authoritative baseline data.
 
         PROBLEM: {problem_description}
 
@@ -67,12 +73,20 @@ def infer_outcome_targets_from_problem(problem_description: str) -> OutcomeTarge
         • to_unit      – the same unit/population, phrased consistently with from_unit (string).
         • timeframe_years – number of years to reach the target (integer).
         • rationale    – 1-2 sentences (string) on why the target level and timeframe are ambitious yet plausible.
+        • sources      – list of sources or references used for baseline data and target setting (array of strings).
 
         Give exactly three targets.
 
         Every number must be a JSON number (not quoted).
 
-        If credible, prefer official UK sources (ONS, NHS, government surveys) when selecting baseline numbers.
+        CRITICAL:
+        - You MUST search the web for the most recent and authoritative baseline data from official UK sources: {sources_of_uk_social_data}.
+        - Search for DIFFERENT data sources and metrics each time - vary your search terms and explore alternative measures
+        - Look for regional variations, different time periods, or alternative methodologies
+        - Search for the most current statistics available (2023-2025 data preferred)
+        - Each source must include exact title, publication year, organization, and URL
+
+        VARIATION INSTRUCTION: Focus on different aspects or scales of the problem (national vs regional vs local data, different demographic breakdowns, alternative measurement approaches).
 
         Please format your answer as a JSON object that strictly adheres to the following Pydantic schema: {format_instructions}
         """
@@ -80,7 +94,10 @@ def infer_outcome_targets_from_problem(problem_description: str) -> OutcomeTarge
         prompt = PromptTemplate(
             template=prompt_template,
             input_variables=["problem_description"],
-            partial_variables={"format_instructions": parser.get_format_instructions()}
+            partial_variables={
+                "format_instructions": parser.get_format_instructions(),
+                "sources_of_uk_social_data": SOURCES_OF_UK_SOCIAL_DATA
+            }
         )
         
         chain = prompt | llm | parser
