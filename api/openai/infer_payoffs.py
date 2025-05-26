@@ -55,14 +55,18 @@ _PAYOFF_PROMPT = """
 You are a UK social-policy analyst using evolutionary game theory to model social interventions.
 
 **Context**
-The target is to reduce a specific social problem metric. You will estimate three numbers for each strategy:
+The target is to reduce this specific social problem: {problem_description}. 
+
+The specific system objective being optimized is: {system_objective}
+
+You will estimate three numbers for each strategy:
 
 **Task**  
 For each strategy in the JSON below, add these three numeric fields:
 
-1. **delta**: How much the strategy changes the target metric
-   - Negative values = improvement (good for society)
-   - Positive values = worsening (bad for society)  
+1. **delta**: How much the strategy changes the target system objective: {system_objective}
+   - Negative values = improvement (moves toward the objective)
+   - Positive values = worsening (moves away from the objective)  
    - Scale: typically between -0.1 to +0.1
    - Use exactly 3 decimal places
 
@@ -73,10 +77,10 @@ For each strategy in the JSON below, add these three numeric fields:
 
 3. **payoff**: Net benefit the actor receives (must be positive)
    - Combines social benefit and private cost considerations
-   - Higher when delta is very negative (helps society) 
+   - Higher when delta is very negative (helps achieve the system objective) 
    - Lower when private_cost is high
-   - Always > 0.005 minimum
-   - Use exactly 3 decimal places
+   - Always > 0.01 minimum
+   - Use exactly 2 decimal places
 
 **Input Data**
 {actors_block}
@@ -96,7 +100,7 @@ Return the result as a JSON object with an "actors" field containing the array o
 def _get_llm() -> ChatOpenAI:
     return ChatOpenAI(
         model_name="gpt-4o-mini",
-        temperature=0.1,
+        temperature=0.3,
         openai_api_key=os.getenv("OPENAI_API_KEY"),
     )
 
@@ -114,7 +118,7 @@ def _get_payoff_chain():
     return prompt | llm | parser
 
 # Public API
-def infer_payoffs(problem_description: str, actors_json: str) -> List[ActorEntry]:
+def infer_payoffs(problem_description: str, actors_json: str, system_objective: str = "the social problem") -> List[ActorEntry]:
     """
     Parameters
     ----------
@@ -122,18 +126,24 @@ def infer_payoffs(problem_description: str, actors_json: str) -> List[ActorEntry
         The same free-text context fed into the actor-identification step.
     actors_json : str
         The raw JSON (list of ActorEntry) returned by that step.
+    system_objective : str
+        The selected system objective/target metric.
 
     Returns
     -------
     List[ActorEntry]
-        Actors with `delta`, `private_cost`, and `payoff` filled in
+        Actors with `delta`, `private_cost`, and `payoff`
         for each of their three strategies.
     """
     chain = _get_payoff_chain()
     
     try:
         print(f"Sending to OpenAI:\n{actors_json[:500]}...")  # Debug print
-        result = chain.invoke({"actors_block": actors_json})
+        result = chain.invoke({
+            "problem_description": problem_description,
+            "system_objective": system_objective,
+            "actors_block": actors_json
+        })
         print(f"Received from OpenAI: {len(result.actors) if result and result.actors else 0} actors")  # Debug print
         return result.actors if result else []
     except Exception as e:

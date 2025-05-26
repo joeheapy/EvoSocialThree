@@ -517,7 +517,7 @@ p {
 .outcome-targets-container.error {
   background-color: var(--jrf-light-gray);
   border-radius: 8px;
-  padding: 20px;
+  padding: 10px;
   border-left: 4px solid #dc3545;
 }
 

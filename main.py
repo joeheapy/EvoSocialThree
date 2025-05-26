@@ -139,10 +139,21 @@ def infer_payoffs():
         actors_json = json.dumps([actor.model_dump() for actor in results['actors_table'].actors], indent=2)
         problem = results.get('problem', '')
         
+        # Get the selected system objective
+        selected_index = results.get('selected_objective_index')
+        system_objective = "the social problem"  # default
+        
+        if selected_index is not None and results.get('outcome_targets'):
+            try:
+                system_objective = results['outcome_targets'].targets[selected_index].description
+                print(f"Using system objective: {system_objective}")
+            except (IndexError, AttributeError):
+                print("Could not retrieve system objective, using default")
+        
         # Call the payoffs inference API
         from api.openai.infer_payoffs import infer_payoffs
         try:
-            payoffs_data = infer_payoffs(problem, actors_json)
+            payoffs_data = infer_payoffs(problem, actors_json, system_objective)
             if payoffs_data:
                 # Create a simple container object to match the template expectations
                 class PayoffsContainer:
@@ -162,7 +173,7 @@ def infer_payoffs():
         print("No actors data available for payoffs inference")
         results['payoffs_table_error'] = True
     
-    return redirect(url_for('hello_world'))
+    return redirect(url_for('hello_world') + '#step-4-payoffs')
 
 @app.route('/select_objective', methods=['POST'])
 def select_objective():
