@@ -38,7 +38,11 @@ results = {
     'actors_table': None,
     'actors_table_error': False,
     'outcome_targets': None,
-    'outcome_targets_error': False
+    'outcome_targets_error': False,
+    'system_objective_selected': False,  # Add this
+    'selected_objective_index': None,    # Add this
+    'payoffs_table': None,
+    'payoffs_table_error': False
 }
 
 @app.route('/', methods=['GET'])
@@ -63,6 +67,10 @@ def submit_problem():
         results['actors_table_error'] = False
         results['outcome_targets'] = None
         results['outcome_targets_error'] = False
+        results['system_objective_selected'] = False  # Reset system objective
+        results['selected_objective_index'] = None    # Reset selected index
+        results['payoffs_table'] = None  # Reset payoffs table
+        results['payoffs_table_error'] = False  # Reset payoffs table error flag
         
         # Redirect to the home page to display the form results
         return redirect(url_for('hello_world'))
@@ -79,6 +87,10 @@ def reset_app():
     results['actors_table_error'] = False
     results['outcome_targets'] = None
     results['outcome_targets_error'] = False
+    results['system_objective_selected'] = False  # Add this
+    results['selected_objective_index'] = None    # Add this
+    results['payoffs_table'] = None
+    results['payoffs_table_error'] = False
     
     print("Application reset to initial state")
     print("--------------------------------\n")
@@ -113,6 +125,68 @@ def analyze_outcome_targets():
             results['outcome_targets_error'] = False
         else:
             results['outcome_targets_error'] = True
+    
+    return redirect(url_for('hello_world'))
+
+@app.route('/infer_payoffs', methods=['POST'])
+def infer_payoffs():
+    """Endpoint for inferring payoffs from actors data"""
+    if results.get('actors_table'):
+        print("\n--- INFERRING PAYOFFS ---")
+        
+        # Convert actors data to JSON string for the API
+        import json
+        actors_json = json.dumps([actor.model_dump() for actor in results['actors_table'].actors], indent=2)
+        problem = results.get('problem', '')
+        
+        # Get the selected system objective
+        selected_index = results.get('selected_objective_index')
+        system_objective = "the social problem"  # default
+        
+        if selected_index is not None and results.get('outcome_targets'):
+            try:
+                system_objective = results['outcome_targets'].targets[selected_index].description
+                print(f"Using system objective: {system_objective}")
+            except (IndexError, AttributeError):
+                print("Could not retrieve system objective, using default")
+        
+        # Call the payoffs inference API
+        from api.openai.infer_payoffs import infer_payoffs
+        try:
+            payoffs_data = infer_payoffs(problem, actors_json, system_objective)
+            if payoffs_data:
+                # Create a simple container object to match the template expectations
+                class PayoffsContainer:
+                    def __init__(self, actors):
+                        self.actors = actors
+                
+                results['payoffs_table'] = PayoffsContainer(payoffs_data)
+                results['payoffs_table_error'] = False
+                print("Payoffs inference successful")
+            else:
+                results['payoffs_table_error'] = True
+                print("Payoffs inference returned no data")
+        except Exception as e:
+            print(f"Error during payoffs inference: {e}")
+            results['payoffs_table_error'] = True
+    else:
+        print("No actors data available for payoffs inference")
+        results['payoffs_table_error'] = True
+    
+    return redirect(url_for('hello_world') + '#step-4-payoffs')
+
+@app.route('/select_objective', methods=['POST'])
+def select_objective():
+    """Endpoint for selecting system objective"""
+    objective_index = request.form.get('objective_index')
+    if objective_index is not None:
+        print(f"\n--- SELECTING SYSTEM OBJECTIVE {objective_index} ---")
+        results['system_objective_selected'] = True
+        results['selected_objective_index'] = int(objective_index)
+        # Reset payoffs when objective changes
+        results['payoffs_table'] = None
+        results['payoffs_table_error'] = False
+        print(f"System objective {objective_index} selected")
     
     return redirect(url_for('hello_world'))
 

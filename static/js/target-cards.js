@@ -41,16 +41,26 @@ function updateSelectObjectiveButton() {
  */
 function selectSystemObjective() {
   const activeCard = document.querySelector('.target-card.active')
-  if (activeCard) {
-    const targetId = activeCard.getAttribute('data-target-id')
-    const metricName = activeCard.querySelector('.target-metric').textContent
-
-    console.log(`Selected system objective: ${metricName} (ID: ${targetId})`)
-
-    // Here you can add functionality to handle the selection
-    // For example, send to server, show next step, etc.
-    alert(`Selected system objective: ${metricName}`)
+  if (!activeCard) {
+    alert('Please select a target first by clicking on one of the cards above.')
+    return
   }
+
+  const targetId = activeCard.dataset.targetId
+
+  // Create a form and submit it
+  const form = document.createElement('form')
+  form.method = 'POST'
+  form.action = '/select_objective'
+
+  const input = document.createElement('input')
+  input.type = 'hidden'
+  input.name = 'objective_index'
+  input.value = targetId
+
+  form.appendChild(input)
+  document.body.appendChild(form)
+  form.submit()
 }
 
 /**
