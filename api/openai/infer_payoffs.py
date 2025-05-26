@@ -70,10 +70,10 @@ For each strategy in the JSON below, add these three numeric fields:
    - Scale: typically between -0.1 to +0.1
    - Use exactly 3 decimal places
 
-2. **private_cost**: Estimate a cost vector for the strategy (financial, reputational or political)
-   - Higher values = more expensive for the actor
-   - Scale: typically between 0.001 to 0.1
-   - Return one value per strategy§
+2. **private_cost**: Estimate the financial, reputational or political cost of the strategy to the actor
+   - Higher values = more costly for the actor
+   - Scale: value between 0.001 to 0.1
+   - Return one value per strategy
    - Use exactly 3 decimal places
 
 3. **payoff**: Net benefit the actor receives (must be positive)
