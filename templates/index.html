@@ -69,6 +69,24 @@
         {% include 'components/outcome_targets.html' %}
       </section>
       {% endif %}
+
+      <!-- Step 4: Payoffs - Only show if outcome targets are complete -->
+      {% if results.outcome_targets %}
+      <section id="step-4-payoffs" class="content-section">
+        <div class="step-heading">
+          <span class="step-label-light">Step 4</span>
+          <h2>Strategy Payoffs</h2>
+        </div>
+        <div>
+          <p class="step-description">
+            Calculate the payoffs for each strategy, considering both the impact
+            on the target metric and the private costs to each actor. These
+            payoffs will drive the evolutionary dynamics of the system.
+          </p>
+        </div>
+        {% include 'components/payoffs_table.html' %}
+      </section>
+      {% endif %}
       <!-- Additional content can go here -->
     </main>
   </body>

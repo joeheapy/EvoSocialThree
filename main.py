@@ -38,7 +38,9 @@ results = {
     'actors_table': None,
     'actors_table_error': False,
     'outcome_targets': None,
-    'outcome_targets_error': False
+    'outcome_targets_error': False,
+    'payoffs_table': None,  # Add this
+    'payoffs_table_error': False  # Add this
 }
 
 @app.route('/', methods=['GET'])
@@ -63,6 +65,8 @@ def submit_problem():
         results['actors_table_error'] = False
         results['outcome_targets'] = None
         results['outcome_targets_error'] = False
+        results['payoffs_table'] = None  # Reset payoffs table
+        results['payoffs_table_error'] = False  # Reset payoffs table error flag
         
         # Redirect to the home page to display the form results
         return redirect(url_for('hello_world'))
@@ -79,6 +83,8 @@ def reset_app():
     results['actors_table_error'] = False
     results['outcome_targets'] = None
     results['outcome_targets_error'] = False
+    results['payoffs_table'] = None  # Add this
+    results['payoffs_table_error'] = False  # Add this
     
     print("Application reset to initial state")
     print("--------------------------------\n")
@@ -113,6 +119,42 @@ def analyze_outcome_targets():
             results['outcome_targets_error'] = False
         else:
             results['outcome_targets_error'] = True
+    
+    return redirect(url_for('hello_world'))
+
+@app.route('/infer_payoffs', methods=['POST'])
+def infer_payoffs():
+    """Endpoint for inferring payoffs from actors data"""
+    if results.get('actors_table'):
+        print("\n--- INFERRING PAYOFFS ---")
+        
+        # Convert actors data to JSON string for the API
+        import json
+        actors_json = json.dumps([actor.model_dump() for actor in results['actors_table'].actors], indent=2)
+        problem = results.get('problem', '')
+        
+        # Call the payoffs inference API
+        from api.openai.infer_payoffs import infer_payoffs
+        try:
+            payoffs_data = infer_payoffs(problem, actors_json)
+            if payoffs_data:
+                # Create a simple container object to match the template expectations
+                class PayoffsContainer:
+                    def __init__(self, actors):
+                        self.actors = actors
+                
+                results['payoffs_table'] = PayoffsContainer(payoffs_data)
+                results['payoffs_table_error'] = False
+                print("Payoffs inference successful")
+            else:
+                results['payoffs_table_error'] = True
+                print("Payoffs inference returned no data")
+        except Exception as e:
+            print(f"Error during payoffs inference: {e}")
+            results['payoffs_table_error'] = True
+    else:
+        print("No actors data available for payoffs inference")
+        results['payoffs_table_error'] = True
     
     return redirect(url_for('hello_world'))
 

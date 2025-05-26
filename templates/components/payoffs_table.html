@@ -1,0 +1,53 @@
+<!-- filepath: /Users/joeheapy/Documents/EvoSocialOne/templates/components/payoffs_table.html -->
+{% if not results.payoffs_table and not results.payoffs_table_error %}
+<!-- Trigger button when no data yet -->
+<div class="analysis-trigger">
+  {% set action_url = url_for('infer_payoffs') %} {% set button_text = 'Infer
+  Pay-offs' %} {% set disabled = false %} {% include
+  'components/analysis_button.html' %}
+</div>
+
+{% elif results.payoffs_table and results.payoffs_table.actors %}
+<!-- Pay-off results table -->
+<div class="payoffs-table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Sector / Actor</th>
+        <th>Strategy ID</th>
+        <th>Commitment</th>
+        <th>Δ effect</th>
+        <th>Private cost</th>
+        <th>Pay-off</th>
+        <th>Short description</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for actor in results.payoffs_table.actors %} {% for strat in
+      actor.strategies %}
+      <tr>
+        <td>{{ actor.sector }}</td>
+        <td><strong>{{ strat.id }}</strong></td>
+        <td>{{ strat.commitment_level }}</td>
+        <td>{{ '%+.3f'|format(strat.delta) }}</td>
+        <td>{{ '%.3f'|format(strat.private_cost) }}</td>
+        <td>{{ '%.3f'|format(strat.payoff) }}</td>
+        <td>{{ strat.description }}</td>
+      </tr>
+      {% endfor %} {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% elif results.payoffs_table_error %}
+<!-- Error block with retry -->
+<div class="payoffs-table-container error">
+  <p>Could not retrieve pay-off information at this time.</p>
+  <div class="analysis-trigger">
+    {% set action_url = url_for('infer_payoffs') %} {% set button_text = 'Retry
+    Pay-off Inference' %} {% set disabled = false %} {% include
+    'components/analysis_button.html' %}
+  </div>
+</div>
+{% endif %}
