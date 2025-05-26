@@ -39,8 +39,10 @@ results = {
     'actors_table_error': False,
     'outcome_targets': None,
     'outcome_targets_error': False,
-    'payoffs_table': None,  # Add this
-    'payoffs_table_error': False  # Add this
+    'system_objective_selected': False,  # Add this
+    'selected_objective_index': None,    # Add this
+    'payoffs_table': None,
+    'payoffs_table_error': False
 }
 
 @app.route('/', methods=['GET'])
@@ -65,6 +67,8 @@ def submit_problem():
         results['actors_table_error'] = False
         results['outcome_targets'] = None
         results['outcome_targets_error'] = False
+        results['system_objective_selected'] = False  # Reset system objective
+        results['selected_objective_index'] = None    # Reset selected index
         results['payoffs_table'] = None  # Reset payoffs table
         results['payoffs_table_error'] = False  # Reset payoffs table error flag
         
@@ -83,8 +87,10 @@ def reset_app():
     results['actors_table_error'] = False
     results['outcome_targets'] = None
     results['outcome_targets_error'] = False
-    results['payoffs_table'] = None  # Add this
-    results['payoffs_table_error'] = False  # Add this
+    results['system_objective_selected'] = False  # Add this
+    results['selected_objective_index'] = None    # Add this
+    results['payoffs_table'] = None
+    results['payoffs_table_error'] = False
     
     print("Application reset to initial state")
     print("--------------------------------\n")
@@ -155,6 +161,21 @@ def infer_payoffs():
     else:
         print("No actors data available for payoffs inference")
         results['payoffs_table_error'] = True
+    
+    return redirect(url_for('hello_world'))
+
+@app.route('/select_objective', methods=['POST'])
+def select_objective():
+    """Endpoint for selecting system objective"""
+    objective_index = request.form.get('objective_index')
+    if objective_index is not None:
+        print(f"\n--- SELECTING SYSTEM OBJECTIVE {objective_index} ---")
+        results['system_objective_selected'] = True
+        results['selected_objective_index'] = int(objective_index)
+        # Reset payoffs when objective changes
+        results['payoffs_table'] = None
+        results['payoffs_table_error'] = False
+        print(f"System objective {objective_index} selected")
     
     return redirect(url_for('hello_world'))
 

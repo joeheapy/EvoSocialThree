@@ -59,6 +59,22 @@
 
   <!-- Select System Objective Button -->
   <div class="analysis-trigger">
+    {% if results.system_objective_selected %}
+    <div
+      style="
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #e8f5e8;
+        border-radius: 8px;
+        border-left: 4px solid #28a745;
+      "
+    >
+      <strong>✓ System Objective Selected:</strong>
+      {{
+      results.outcome_targets.targets[results.selected_objective_index].metric_name
+      }}
+    </div>
+    {% else %}
     <button
       id="selectObjectiveButton"
       class="analysis-button"
@@ -67,6 +83,7 @@
     >
       Select System Objective
     </button>
+    {% endif %}
   </div>
 </div>
 {% elif results.outcome_targets_error %}
