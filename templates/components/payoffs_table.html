@@ -8,6 +8,69 @@
 </div>
 
 {% elif results.payoffs_table and results.payoffs_table.actors %}
+<!-- Column descriptions div (styled like Sources in outcome_targets) -->
+<div class="outcome-targets-container">
+  <div class="outcome-targets-sources">
+    <h4>Column Explanations</h4>
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+      <thead>
+        <tr style="background-color: #f8f8f8">
+          <th
+            style="
+              padding: 4px 8px;
+              text-align: left;
+              border-bottom: 1px solid #ddd;
+              font-weight: 600;
+            "
+          >
+            Column
+          </th>
+          <th
+            style="
+              padding: 4px 8px;
+              text-align: left;
+              border-bottom: 1px solid #ddd;
+              font-weight: 600;
+            "
+          >
+            What it tells you
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+            <strong>Δ effect</strong> ("delta effect")
+          </td>
+          <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+            The benefit. The estimated impact on the headline problem. A
+            <strong>negative</strong> number means the strategy
+            <em>reduces</em> the problem; a <strong>positive</strong> number
+            means it <em>makes things worse</em>.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+            <strong>Private cost</strong>
+          </td>
+          <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+            The cost. Roughly how expensive or awkward the strategy is for the
+            actor itself. Higher numbers mean a bigger burden.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 8px"><strong>Pay-off</strong></td>
+          <td style="padding: 4px 8px">
+            The actor's overall gain after weighing the social benefit against
+            its own cost. Higher pay-off values make a strategy more attractive
+            to that actor.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <!-- Pay-off results table -->
 <div class="payoffs-table-container">
   <table>
@@ -27,7 +90,9 @@
       {% for actor in results.payoffs_table.actors %} {% for strat in
       actor.strategies %}
       <tr>
-        <td>{{ actor.sector }}</td>
+        {% if loop.first %}
+        <td rowspan="{{ actor.strategies|length }}">{{ actor.sector }}</td>
+        {% endif %}
         <td><strong>{{ strat.id }}</strong></td>
         <td>{{ strat.commitment_level }}</td>
         <td>{{ '%+.3f'|format(strat.delta) }}</td>

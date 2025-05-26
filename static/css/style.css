@@ -326,14 +326,14 @@ p {
   background-color: #f8f8f8;
   color: var(--jrf-purple);
   font-weight: 500;
-  padding: 12px 8px;
+  padding: 8px 8px; /* Reduced from 12px to 10px */
   text-align: left;
   border-bottom: 2px solid var(--jrf-mid-gray);
   white-space: nowrap;
 }
 
 .payoffs-table-container td {
-  padding: 10px 8px;
+  padding: 6px; /* Reduced from 10px to 8px */
   border-bottom: 1px solid var(--jrf-mid-gray);
   vertical-align: top;
   color: var(--jrf-text);

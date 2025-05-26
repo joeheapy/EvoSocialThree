@@ -85,7 +85,7 @@ For each strategy in the JSON below, add these three numeric fields:
 - Return the EXACT same JSON structure with the three new numeric fields added to each strategy
 - Keep all existing fields (id, description, commitment_level) unchanged
 - Ensure all payoff values are strictly positive
-- Use exactly 3 decimal places for all numbers
+- Use exactly 2 decimal places for all numbers
 
 Return the result as a JSON object with an "actors" field containing the array of ActorEntry objects with the enhanced strategies.
 
