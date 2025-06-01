@@ -17,7 +17,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
-# Data models – Strategy now has three extra numeric fields
+# Data models – Strategy now has weight instead of payoff
 class Strategy(BaseModel):
     id: str = Field(description="Strategy ID in the format '[actorID-index]' (e.g., 'CG-1')")
     description: str = Field(description="Brief description of the strategy")
@@ -31,9 +31,10 @@ class Strategy(BaseModel):
         description="Estimated financial or political cost to the actor, "
                     "expressed in arbitrary 'cost units'."
     )
-    payoff: float = Field(
-        description="Net payoff combining the actor's private cost and its weight "
-                    "on the social outcome. Must be strictly positive."
+    weight: float = Field(
+        description="How strongly the actor values improvement in the outcome target. "
+                    "Value between 0 and 1, where 1 means they deeply care about the outcome "
+                    "and 0 means they are indifferent to it."
     )
 
 
@@ -76,21 +77,34 @@ For each strategy in the JSON below, add these three numeric fields:
    - Return one value per strategy
    - Use exactly 3 decimal places
 
-3. **payoff**: Net benefit the actor receives (must be positive)
-   - Combines social benefit and private cost considerations
-   - Higher when delta is very negative (helps achieve the system objective) 
-   - Lower when private_cost is high
-   - Always > 0.01 minimum
+3. **weight**: How strongly this actor genuinely values improvement in the outcome target
+   - Research the actor's historical actions, policies, and investments in the UK related to this issue
+   - Consider their track record of sustained commitment vs. rhetoric
+   - Look at their actual resource allocation and policy priorities
+   - Value between 0.0 and 1.0 where:
+     * 0.8-1.0 = Strong genuine commitment (consistent actions over time)
+     * 0.5-0.7 = Moderate genuine interest (some actions but not priority)
+     * 0.2-0.4 = Limited genuine interest (mostly rhetoric, minimal action)
+     * 0.0-0.1 = Minimal genuine interest (indifferent or conflicted priorities)
+   - Base estimates on observable UK policy actions, not stated intentions
    - Use exactly 3 decimal places
 
-**Input Data**x
+**Research Guidelines for Weight Estimation**
+For each actor, consider their UK track record:
+- Government departments: Look at budget allocations, policy consistency, and outcomes
+- Local authorities: Examine their actual spending priorities and policy implementation
+- Charities/NGOs: Review their resource allocation and campaign focus areas
+- Private sector: Assess their genuine CSR investments vs. marketing claims
+- Consider whether their actions align with stated commitments over multiple years
+
+**Input Data**
 {actors_block}
 
 **Output Requirements**
 - Return the EXACT same JSON structure with the three new numeric fields added to each strategy
 - Keep all existing fields (id, description, commitment_level) unchanged
-- Ensure all payoff values are strictly positive
-- Use exactly 2 decimal places for all numbers
+- Ensure all weight values are between 0.0 and 1.0
+- Use exactly 3 decimal places for all numbers
 
 Return the result as a JSON object with an "actors" field containing the array of ActorEntry objects with the enhanced strategies.
 
@@ -133,7 +147,7 @@ def infer_payoffs(problem_description: str, actors_json: str, system_objective: 
     Returns
     -------
     List[ActorEntry]
-        Actors with `delta`, `private_cost`, and `payoff`
+        Actors with `delta`, `private_cost`, and `weight`
         for each of their three strategies.
     """
     chain = _get_payoff_chain()

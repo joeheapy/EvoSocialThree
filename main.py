@@ -34,13 +34,13 @@ def format_number(value):
 # Initialize with default text and placeholder for actors table
 results = {
     'problem': DEFAULT_PROBLEM_TEXT,
-    'problem_submitted': False,  # New flag to track if form has been submitted
+    'problem_submitted': False,  # Track if form has been submitted
     'actors_table': None,
     'actors_table_error': False,
     'outcome_targets': None,
     'outcome_targets_error': False,
-    'system_objective_selected': False,  # Add this
-    'selected_objective_index': None,    # Add this
+    'system_objective_selected': False,
+    'selected_objective_index': None,
     'payoffs_table': None,
     'payoffs_table_error': False
 }

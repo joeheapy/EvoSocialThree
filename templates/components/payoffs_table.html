@@ -59,11 +59,12 @@
           </td>
         </tr>
         <tr>
-          <td style="padding: 4px 8px"><strong>Pay-off</strong></td>
+          <td style="padding: 4px 8px"><strong>Weight</strong></td>
           <td style="padding: 4px 8px">
-            The actor's overall gain after weighing the social benefit against
-            its own cost. Higher pay-off values make a strategy more attractive
-            to that actor.
+            How strongly this actor genuinely values improvement in the outcome
+            target. Based on their track record of actual actions in the UK, not
+            just stated intentions. Values range from 0 (indifferent) to 1
+            (deeply committed).
           </td>
         </tr>
       </tbody>
@@ -81,7 +82,7 @@
         <th>Commitment</th>
         <th>Δ effect</th>
         <th>Private cost</th>
-        <th>Pay-off</th>
+        <th>Weight</th>
         <th>Short description</th>
       </tr>
     </thead>
@@ -97,7 +98,7 @@
         <td>{{ strat.commitment_level }}</td>
         <td>{{ '%+.3f'|format(strat.delta) }}</td>
         <td>{{ '%.3f'|format(strat.private_cost) }}</td>
-        <td>{{ '%.3f'|format(strat.payoff) }}</td>
+        <td>{{ '%.3f'|format(strat.weight) }}</td>
         <td>{{ strat.description }}</td>
       </tr>
       {% endfor %} {% endfor %}
@@ -110,7 +111,7 @@
         <th>Commitment</th>
         <th>Δ effect</th>
         <th>Private cost</th>
-        <th>Pay-off</th>
+        <th>Weight</th>
         <th>Short description</th>
       </tr>
     </tfoot>
