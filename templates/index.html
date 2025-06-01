@@ -88,9 +88,26 @@
           </p>
         </div>
         {% include 'components/payoffs_table.html' %}
+
+        <!-- Pay-offs analysis - Only show if payoffs table has data -->
+        {% if results.payoffs_table %}
+        <div id="payoffs-analysis-section">
+          <div class="step-heading">
+            <span class="step-label-light">Step 5</span>
+            <h2>Pay-off Analysis</h2>
+          </div>
+          <div>
+            <p class="step-description">
+              Strategic analysis of payoff patterns to understand economic
+              attractiveness of strategies and identify which actors are most
+              likely to participate.
+            </p>
+          </div>
+          {% include 'components/payoffs_analysis.html' %}
+        </div>
+        {% endif %}
       </section>
       {% endif %}
-      <!-- Additional content can go here -->
     </main>
   </body>
 </html>

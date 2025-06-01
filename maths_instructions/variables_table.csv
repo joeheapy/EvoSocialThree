@@ -1,0 +1,10 @@
+| Symbol        | What it means                                                                                                                                                                 | Sign convention |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| $g$           | Actor group index (e.g. Central Government = 1)                                                                                                                               | integer         |
+| $k$           | Strategy index inside actor $g$ (1 = high-commitment, 2 = medium, 3 = low)                                                                                                    | integer         |
+| $t$           | Epoch / generation counter (0, 1, 2 …)                                                                                                                                        | integer         |
+| $\Delta_{gk}$ | “Delta-effect”: estimated change in the headline metric if this strategy is used **one unit more**. <br>(Negative values *improve* the situation; positive values worsen it.) | real            |
+| $C_{gk}$      | Private cost to the actor when it adopts strategy $k$ (money, staff time, political risk …)                                                                                   | real            |
+| $\beta_g$     | Weight in $[0,1]$ expressing how strongly actor $g$ values an improvement in the headline metric                                                                              | real            |
+| $\varepsilon$ | Tiny floor constant (e.g. $10^{-3}$) to keep pay-offs strictly positive                                                                                                       | real            |
+| $F_{gk}(t)$   | **Pay-off**: the net “reward” actor $g$ expects from strategy $k$ at epoch $t$                                                                                                | real $>0$       |

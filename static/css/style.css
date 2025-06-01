@@ -624,6 +624,127 @@ p {
   border-bottom: none;
 }
 
+/* Payoff Analysis Category Badges */
+.payoff-category-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.payoff-category-best {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.payoff-category-floor {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.payoff-category-middle {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.payoff-category-marginal {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.payoff-category-default {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+/* Payoff Analysis Structure */
+.payoff-analysis-section {
+  margin-bottom: 24px;
+}
+
+.payoff-analysis-title {
+  color: var(--jrf-purple);
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.payoff-analysis-list {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+.payoff-analysis-list li {
+  margin-bottom: 8px;
+}
+
+.strategy-analysis-card {
+  border-left: 3px solid #e8f4f8;
+  padding-left: 16px;
+  margin-bottom: 16px;
+  background-color: #fafbfc;
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.strategy-header {
+  margin-bottom: 8px;
+}
+
+.strategy-id {
+  color: var(--jrf-purple);
+  font-weight: 600;
+}
+
+.strategy-meta {
+  color: var(--jrf-dark-gray);
+  font-size: 14px;
+}
+
+.strategy-economic-desc {
+  margin-bottom: 8px;
+  font-style: italic;
+  color: #495057;
+}
+
+.strategy-insights {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.strategy-insights li {
+  margin-bottom: 4px;
+}
+
+.strategic-implications-box {
+  background-color: #e8f4f8;
+  padding: 16px;
+  border-radius: 6px;
+  border-left: 4px solid var(--jrf-purple);
+}
+
+.strategic-implications-list {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+.strategic-implications-list li {
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.payoff-analysis-disclaimer {
+  font-size: 12px;
+  color: var(--jrf-dark-gray);
+  font-style: italic;
+  margin-top: 16px;
+}
+
 /* Responsive adjustments for mobile */
 @media (max-width: 768px) {
   .hero h1 {

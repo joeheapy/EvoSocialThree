@@ -59,12 +59,23 @@
           </td>
         </tr>
         <tr>
-          <td style="padding: 4px 8px"><strong>Weight</strong></td>
-          <td style="padding: 4px 8px">
+          <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+            <strong>Weight</strong>
+          </td>
+          <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
             How strongly this actor genuinely values improvement in the outcome
             target. Based on their track record of actual actions in the UK, not
             just stated intentions. Values range from 0 (indifferent) to 1
             (deeply committed).
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 8px"><strong>Pay-off (epoch 0)</strong></td>
+          <td style="padding: 4px 8px">
+            The overall attractiveness of the strategy to the actor. Calculated
+            as: weight × (−Δ effect) − private cost, with a minimum floor to
+            ensure positive values. Higher values indicate more attractive
+            strategies.
           </td>
         </tr>
       </tbody>
@@ -83,6 +94,7 @@
         <th>Δ effect</th>
         <th>Private cost</th>
         <th>Weight</th>
+        <th>Pay-off (epoch 0)</th>
         <th>Short description</th>
       </tr>
     </thead>
@@ -99,6 +111,10 @@
         <td>{{ '%+.3f'|format(strat.delta) }}</td>
         <td>{{ '%.3f'|format(strat.private_cost) }}</td>
         <td>{{ '%.3f'|format(strat.weight) }}</td>
+        <td>
+          {{ '%.6f'|format(strat.payoff_epoch_0) if strat.payoff_epoch_0 is
+          defined else 'N/A' }}
+        </td>
         <td>{{ strat.description }}</td>
       </tr>
       {% endfor %} {% endfor %}
@@ -112,6 +128,7 @@
         <th>Δ effect</th>
         <th>Private cost</th>
         <th>Weight</th>
+        <th>Pay-off (epoch 0)</th>
         <th>Short description</th>
       </tr>
     </tfoot>
