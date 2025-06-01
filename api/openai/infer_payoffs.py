@@ -17,7 +17,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
-# Data models – Strategy now has three extra numeric fields
+# Data models – Strategy now has weight instead of payoff
 class Strategy(BaseModel):
     id: str = Field(description="Strategy ID in the format '[actorID-index]' (e.g., 'CG-1')")
     description: str = Field(description="Brief description of the strategy")
@@ -31,9 +31,15 @@ class Strategy(BaseModel):
         description="Estimated financial or political cost to the actor, "
                     "expressed in arbitrary 'cost units'."
     )
-    payoff: float = Field(
-        description="Net payoff combining the actor's private cost and its weight "
-                    "on the social outcome. Must be strictly positive."
+    weight: float = Field(
+        description="How strongly the actor values improvement in the outcome target. "
+                    "Value between 0 and 1, where 1 means they deeply care about the outcome "
+                    "and 0 means they are indifferent to it."
+    )
+    # Calculated payoff field (optional, will be set after calculation)
+    payoff_epoch_0: float = Field(
+        default=None,
+        description="Calculated payoff for epoch 0 using the formula: weight * (-delta) - private_cost"
     )
 
 
@@ -67,20 +73,52 @@ For each strategy in the JSON below, add these three numeric fields:
 1. **delta**: How much the strategy changes the target system objective: {system_objective}
    - Negative values = improvement (moves toward the objective)
    - Positive values = worsening (moves away from the objective)  
-   - Scale: typically between -0.1 to +0.1
+   - Scale: typically between -0.15 to +0.05 (stronger effects, more negative for improvements)
+   - High commitment strategies should have larger negative deltas (-0.08 to -0.15)
+   - Medium commitment strategies: (-0.04 to -0.08)
+   - Low commitment strategies: (-0.01 to -0.04)
    - Use exactly 3 decimal places
 
-2. **private_cost**: Cost to the actor implementing the strategy
-   - Higher values = more expensive for the actor
-   - Scale: typically between 0.0 to 0.1
+2. **private_cost**: Estimate the financial, reputational or political cost of the strategy to the actor
+   - Higher values = more costly for the actor
+   - Scale: value between 0.005 to 0.080 (reduced maximum to create better cost-benefit ratio)
+   - High commitment strategies: 0.020-0.080
+   - Medium commitment strategies: 0.010-0.040
+   - Low commitment strategies: 0.005-0.020
    - Use exactly 3 decimal places
 
-3. **payoff**: Net benefit the actor receives (must be positive)
-   - Combines social benefit and private cost considerations
-   - Higher when delta is very negative (helps achieve the system objective) 
-   - Lower when private_cost is high
-   - Always > 0.01 minimum
-   - Use exactly 2 decimal places
+3. **weight**: How strongly this actor genuinely values improvement in the outcome target
+   - Research the actor's historical actions, policies, and investments in the UK related to this issue
+   - Consider their track record of sustained commitment vs. rhetoric
+   - Look at their actual resource allocation and policy priorities
+   - Value between 0.0 and 1.0 where:
+     * 0.8-1.0 = Strong genuine commitment (consistent actions over time)
+     * 0.5-0.7 = Moderate genuine interest (some actions but not priority)
+     * 0.2-0.4 = Limited genuine interest (mostly rhetoric, minimal action)
+     * 0.0-0.1 = Minimal genuine interest (indifferent or conflicted priorities)
+   - Base estimates on observable UK policy actions, not stated intentions
+   - Use exactly 3 decimal places
+
+**Commitment Level Guidelines:**
+- **High commitment strategies**: Should have strong negative deltas (-0.08 to -0.15) but also high costs (0.040-0.080)
+- **Medium commitment strategies**: Moderate negative deltas (-0.04 to -0.08) with moderate costs (0.020-0.040)  
+- **Low commitment strategies**: Small negative deltas (-0.01 to -0.04) with low costs (0.005-0.020)
+
+This ensures a realistic trade-off where more ambitious strategies cost more but also achieve more.
+
+**Balance Guidelines:**
+- Ensure that for each actor, at least one strategy has positive raw payoff (where weight × (-delta) > private_cost)
+- Create a realistic cost-benefit spectrum across commitment levels
+- Aim for calculated payoffs distributed across a meaningful range, not clustered at minimum values
+- Consider that actors need at least some viable strategies to participate meaningfully
+
+**Research Guidelines for Weight Estimation**
+For each actor, consider their UK track record:
+- Government departments: Look at budget allocations, policy consistency, and outcomes
+- Local authorities: Examine their actual spending priorities and policy implementation
+- Charities/NGOs: Review their resource allocation and campaign focus areas
+- Private sector: Assess their genuine CSR investments vs. marketing claims
+- Consider whether their actions align with stated commitments over multiple years
 
 **Input Data**
 {actors_block}
@@ -88,8 +126,9 @@ For each strategy in the JSON below, add these three numeric fields:
 **Output Requirements**
 - Return the EXACT same JSON structure with the three new numeric fields added to each strategy
 - Keep all existing fields (id, description, commitment_level) unchanged
-- Ensure all payoff values are strictly positive
-- Use exactly 2 decimal places for all numbers
+- Ensure all weight values are between 0.0 and 1.0
+- Use exactly 3 decimal places for all numbers
+- Follow the commitment level guidelines to create realistic cost-benefit relationships
 
 Return the result as a JSON object with an "actors" field containing the array of ActorEntry objects with the enhanced strategies.
 
@@ -100,7 +139,7 @@ Return the result as a JSON object with an "actors" field containing the array o
 def _get_llm() -> ChatOpenAI:
     return ChatOpenAI(
         model_name="gpt-4o-mini",
-        temperature=0.3,
+        temperature=0.1,
         openai_api_key=os.getenv("OPENAI_API_KEY"),
     )
 
@@ -132,7 +171,7 @@ def infer_payoffs(problem_description: str, actors_json: str, system_objective: 
     Returns
     -------
     List[ActorEntry]
-        Actors with `delta`, `private_cost`, and `payoff`
+        Actors with `delta`, `private_cost`, `weight`, and calculated `payoff_epoch_0`
         for each of their three strategies.
     """
     chain = _get_payoff_chain()
@@ -145,7 +184,15 @@ def infer_payoffs(problem_description: str, actors_json: str, system_objective: 
             "actors_block": actors_json
         })
         print(f"Received from OpenAI: {len(result.actors) if result and result.actors else 0} actors")  # Debug print
-        return result.actors if result else []
+        
+        # Calculate payoffs using the algorithm from pay-off-formula.md
+        if result and result.actors:
+            from maths.calculate_payoffs import process_payoffs_data
+            _, _, updated_actors = process_payoffs_data(result.actors)
+            return updated_actors
+        else:
+            return []
+            
     except Exception as e:
         print(f"Error in payoffs chain: {e}")
         import traceback

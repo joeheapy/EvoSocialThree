@@ -31,18 +31,19 @@ def format_number(value):
         return str(value)
 
 # Store form results (in a real app, you'd use a database)
-# Initialize with default text and placeholder for actors table
 results = {
     'problem': DEFAULT_PROBLEM_TEXT,
-    'problem_submitted': False,  # New flag to track if form has been submitted
+    'problem_submitted': False,
     'actors_table': None,
     'actors_table_error': False,
     'outcome_targets': None,
     'outcome_targets_error': False,
-    'system_objective_selected': False,  # Add this
-    'selected_objective_index': None,    # Add this
+    'system_objective_selected': False,
+    'selected_objective_index': None,
     'payoffs_table': None,
-    'payoffs_table_error': False
+    'payoffs_table_error': False,
+    'payoffs_analysis': None,
+    'payoffs_analysis_error': False
 }
 
 @app.route('/', methods=['GET'])
@@ -62,15 +63,17 @@ def submit_problem():
         
         # Store the problem in our results dictionary and reset all analysis results
         results['problem'] = problem
-        results['problem_submitted'] = True  # Mark that the form has been submitted
+        results['problem_submitted'] = True
         results['actors_table'] = None
         results['actors_table_error'] = False
         results['outcome_targets'] = None
         results['outcome_targets_error'] = False
-        results['system_objective_selected'] = False  # Reset system objective
-        results['selected_objective_index'] = None    # Reset selected index
-        results['payoffs_table'] = None  # Reset payoffs table
-        results['payoffs_table_error'] = False  # Reset payoffs table error flag
+        results['system_objective_selected'] = False
+        results['selected_objective_index'] = None
+        results['payoffs_table'] = None
+        results['payoffs_table_error'] = False
+        results['payoffs_analysis'] = None
+        results['payoffs_analysis_error'] = False
         
         # Redirect to the home page to display the form results
         return redirect(url_for('hello_world'))
@@ -87,10 +90,12 @@ def reset_app():
     results['actors_table_error'] = False
     results['outcome_targets'] = None
     results['outcome_targets_error'] = False
-    results['system_objective_selected'] = False  # Add this
-    results['selected_objective_index'] = None    # Add this
+    results['system_objective_selected'] = False
+    results['selected_objective_index'] = None
     results['payoffs_table'] = None
     results['payoffs_table_error'] = False
+    results['payoffs_analysis'] = None
+    results['payoffs_analysis_error'] = False
     
     print("Application reset to initial state")
     print("--------------------------------\n")
@@ -183,12 +188,65 @@ def select_objective():
         print(f"\n--- SELECTING SYSTEM OBJECTIVE {objective_index} ---")
         results['system_objective_selected'] = True
         results['selected_objective_index'] = int(objective_index)
-        # Reset payoffs when objective changes
+        # Reset payoffs and analysis when objective changes
         results['payoffs_table'] = None
         results['payoffs_table_error'] = False
+        results['payoffs_analysis'] = None
+        results['payoffs_analysis_error'] = False
         print(f"System objective {objective_index} selected")
     
     return redirect(url_for('hello_world'))
+
+@app.route('/analyze_payoffs', methods=['POST'])
+def analyze_payoffs():
+    """Endpoint for generating payoff analysis"""
+    print(f"DEBUG: payoffs_table exists: {bool(results.get('payoffs_table'))}")
+    print(f"DEBUG: payoffs_table has actors: {bool(results.get('payoffs_table') and results.get('payoffs_table').actors)}")
+    
+    if results.get('payoffs_table') and results.get('payoffs_table').actors:
+        try:
+            print(f"\n--- ANALYZING PAYOFF PATTERNS ---")
+            print(f"DEBUG: Number of actors: {len(results['payoffs_table'].actors)}")
+            
+            from api.openai.analyze_payoffs import analyze_payoffs as analyze_payoffs_fn
+            
+            # Get the selected system objective
+            selected_objective = "reducing child poverty"  # Default
+            if results.get('outcome_targets') and results.get('selected_objective_index') is not None:
+                idx = results['selected_objective_index']
+                if 0 <= idx < len(results['outcome_targets'].targets):
+                    # Fix: Use 'metric_name' which is the correct attribute from OutcomeTarget
+                    selected_objective = results['outcome_targets'].targets[idx].metric_name
+            
+            print(f"DEBUG: Selected objective: {selected_objective}")
+            
+            # Generate analysis
+            analysis = analyze_payoffs_fn(
+                problem_description=results['problem'],
+                actors=results['payoffs_table'].actors,
+                system_objective=selected_objective
+            )
+            
+            print(f"DEBUG: Analysis result type: {type(analysis)}")
+            
+            if analysis:
+                results['payoffs_analysis'] = analysis
+                results['payoffs_analysis_error'] = False
+                print(f"Payoff analysis generated successfully")
+            else:
+                results['payoffs_analysis_error'] = True
+                print("Payoff analysis returned no data")
+            
+        except Exception as e:
+            print(f"Error during payoff analysis: {e}")
+            import traceback
+            traceback.print_exc()
+            results['payoffs_analysis_error'] = True
+    else:
+        print("No payoff data available for analysis")
+        results['payoffs_analysis_error'] = True
+    
+    return redirect(url_for('hello_world') + '#payoffs-analysis-section')
 
 if __name__ == '__main__':
     # Open browser in a separate thread
