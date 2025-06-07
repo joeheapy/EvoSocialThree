@@ -130,7 +130,7 @@
         <td>
           {% if strat.behavior_share_epoch_0 is not none %} {{
           '%.3f'|format(strat.behavior_share_epoch_0) }} {% else %}
-          <em>Not calculated</em>
+          <em>Calculating...</em>
           {% endif %}
         </td>
         <td>{{ strat.description }}</td>
@@ -154,23 +154,7 @@
   </table>
 </div>
 
-<!-- Behavior Share Analysis Trigger (only show if payoffs exist but behavior shares don't) -->
-{% set has_behavior_shares = results.payoffs_table.actors |
-selectattr('strategies') | map(attribute='strategies') | list | first |
-selectattr('behavior_share_epoch_0') | list | length > 0 %} {% if not
-has_behavior_shares %}
-<div class="analysis-trigger next-step">
-  <form
-    method="POST"
-    action="{{ url_for('infer_behavior_shares') }}"
-    class="analysis-form"
-  >
-    <button type="submit" class="analysis-button">
-      Calculate Behavior Shares
-    </button>
-  </form>
-</div>
-{% endif %} {% elif results.payoffs_table_error %}
+{% elif results.payoffs_table_error %}
 <!-- Error block with retry -->
 <div class="payoffs-table-container error">
   <p>Could not retrieve pay-off information at this time.</p>

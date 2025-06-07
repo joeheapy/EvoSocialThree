@@ -168,6 +168,28 @@ def infer_payoffs():
                 results['payoffs_table'] = PayoffsContainer(payoffs_data)
                 results['payoffs_table_error'] = False
                 print("Payoffs inference successful")
+                
+                # AUTOMATICALLY CALCULATE BEHAVIOR SHARES
+                print("\n--- AUTO-INFERRING BEHAVIOR SHARES ---")
+                
+                # Call the behavior shares inference API
+                from api.openai.infer_behavior_shares import infer_behavior_shares as infer_behavior_shares_fn
+                try:
+                    actors_with_behavior_shares = infer_behavior_shares_fn(problem, payoffs_data, epoch=0)
+                    
+                    if actors_with_behavior_shares:
+                        # Update the payoffs table with behavior share data
+                        results['payoffs_table'] = PayoffsContainer(actors_with_behavior_shares)
+                        print("Behavior shares inference successful")
+                    else:
+                        print("Behavior shares inference returned no data, keeping payoffs data")
+                        
+                except Exception as e:
+                    print(f"Error during automatic behavior shares inference: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    print("Continuing with payoffs data only")
+                
             else:
                 results['payoffs_table_error'] = True
                 print("Payoffs inference returned no data")
@@ -247,40 +269,6 @@ def analyze_payoffs():
         results['payoffs_analysis_error'] = True
     
     return redirect(url_for('hello_world') + '#payoffs-analysis-section')
-
-@app.route('/infer_behavior_shares', methods=['POST'])
-def infer_behavior_shares():
-    """Endpoint for inferring behavior shares from payoffs data"""
-    if results.get('payoffs_table') and results.get('payoffs_table').actors:
-        print("\n--- INFERRING BEHAVIOR SHARES ---")
-        
-        problem = results.get('problem', '')
-        
-        # Call the behavior shares inference API
-        from api.openai.infer_behavior_shares import infer_behavior_shares as infer_behavior_shares_fn
-        try:
-            # Convert existing actors to the format expected by the API
-            actors_with_behavior_shares = infer_behavior_shares_fn(problem, results['payoffs_table'].actors, epoch=0)
-            
-            if actors_with_behavior_shares:
-                # Update the existing payoffs table with behavior share data
-                class PayoffsContainer:
-                    def __init__(self, actors):
-                        self.actors = actors
-                
-                results['payoffs_table'] = PayoffsContainer(actors_with_behavior_shares)
-                print("Behavior shares inference successful")
-            else:
-                print("Behavior shares inference returned no data")
-                
-        except Exception as e:
-            print(f"Error during behavior shares inference: {e}")
-            import traceback
-            traceback.print_exc()
-    else:
-        print("No payoffs data available for behavior shares inference")
-    
-    return redirect(url_for('hello_world') + '#step-4-payoffs')
 
 if __name__ == '__main__':
     # Open browser in a separate thread
