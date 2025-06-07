@@ -70,12 +70,23 @@
           </td>
         </tr>
         <tr>
-          <td style="padding: 4px 8px"><strong>Pay-off (epoch 0)</strong></td>
-          <td style="padding: 4px 8px">
+          <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+            <strong>Pay-off (epoch 0)</strong>
+          </td>
+          <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
             The overall attractiveness of the strategy to the actor. Calculated
             as: weight × (−Δ effect) − private cost, with a minimum floor to
             ensure positive values. Higher values indicate more attractive
             strategies.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 8px"><strong>Behavior Share</strong></td>
+          <td style="padding: 4px 8px">
+            The proportion of the actor's current behavior allocated to this
+            strategy today. Based on recent UK policy actions, spending
+            patterns, and resource allocation. All strategies for an actor sum
+            to 1.000.
           </td>
         </tr>
       </tbody>
@@ -94,7 +105,8 @@
         <th>Δ effect</th>
         <th>Private cost</th>
         <th>Weight</th>
-        <th>Pay-off (epoch 0)</th>
+        <th>Pay-off</th>
+        <th>Behavior Share</th>
         <th>Short description</th>
       </tr>
     </thead>
@@ -112,8 +124,14 @@
         <td>{{ '%.3f'|format(strat.private_cost) }}</td>
         <td>{{ '%.3f'|format(strat.weight) }}</td>
         <td>
-          {{ '%.6f'|format(strat.payoff_epoch_0) if strat.payoff_epoch_0 is
-          defined else 'N/A' }}
+          {{ '%.6f'|format(strat.payoff_epoch_0) if strat.payoff_epoch_0 is not
+          none else 'N/A' }}
+        </td>
+        <td>
+          {% if strat.behavior_share_epoch_0 is not none %} {{
+          '%.3f'|format(strat.behavior_share_epoch_0) }} {% else %}
+          <em>Not calculated</em>
+          {% endif %}
         </td>
         <td>{{ strat.description }}</td>
       </tr>
@@ -128,14 +146,31 @@
         <th>Δ effect</th>
         <th>Private cost</th>
         <th>Weight</th>
-        <th>Pay-off (epoch 0)</th>
+        <th>Pay-off</th>
+        <th>Behavior Share</th>
         <th>Short description</th>
       </tr>
     </tfoot>
   </table>
 </div>
 
-{% elif results.payoffs_table_error %}
+<!-- Behavior Share Analysis Trigger (only show if payoffs exist but behavior shares don't) -->
+{% set has_behavior_shares = results.payoffs_table.actors |
+selectattr('strategies') | map(attribute='strategies') | list | first |
+selectattr('behavior_share_epoch_0') | list | length > 0 %} {% if not
+has_behavior_shares %}
+<div class="analysis-trigger next-step">
+  <form
+    method="POST"
+    action="{{ url_for('infer_behavior_shares') }}"
+    class="analysis-form"
+  >
+    <button type="submit" class="analysis-button">
+      Calculate Behavior Shares
+    </button>
+  </form>
+</div>
+{% endif %} {% elif results.payoffs_table_error %}
 <!-- Error block with retry -->
 <div class="payoffs-table-container error">
   <p>Could not retrieve pay-off information at this time.</p>
