@@ -8,6 +8,7 @@
   --jrf-mid-gray: #e6e6e6; /* Borders */
   --jrf-dark-gray: #6d6e71; /* Secondary text */
   --jrf-divider: #586387; /* Horizonal divider */
+  --jrf-yellow: #4f7700; /* Yellow for highlights */
 }
 
 * {
@@ -24,6 +25,16 @@ body {
   background-color: #f4f0e8; /* Beige background for page */
   margin: 0;
   padding: 0;
+}
+
+/* Smooth scrolling for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Add some padding to account for any fixed headers */
+section[id] {
+  scroll-margin-top: 20px;
 }
 
 /* Basic typography */
