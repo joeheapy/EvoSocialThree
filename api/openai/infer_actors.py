@@ -105,7 +105,7 @@ def infer_actors_from_problem(problem_description: str) -> ActorsTable | None:
         - Each strategy MUST include an id, description, and commitment_level
         - Use UK English spellings. 
 
-        Always include these key sectors IF relevant to the problem: Central Government, Local Authorities, Private Sector, Social Investors, Justice System, Charities/NGOs, Healthcare Providers, Affected Populations.
+        Always include these key sectors IF relevant to the problem: Central Government, Local Authorities, Social Investors, Justice System, Charities/NGOs, Private Sector, Healthcare Providers, Affected Populations.
 
         Please format your answer as a JSON object that strictly adheres to the following Pydantic schema: {format_instructions}
         """
