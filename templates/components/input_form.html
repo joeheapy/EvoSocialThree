@@ -2,7 +2,7 @@
   <div class="hero-content">
     <div class="step-heading">
       <span class="step-label-dark">Step 1</span>
-      <h1>What's the (social and systemic) problem?</h1>
+      <h1>What's the problem?</h1>
     </div>
     <form id="problemForm" method="POST" action="/submit" class="spinner-form">
       <div class="textarea-container">
@@ -38,16 +38,31 @@
   </div>
 </div>
 
-<!-- Original script still needed for character count -->
+<!-- Character count -->
 <script>
   const textarea = document.getElementById('problemInput')
   const charCount = document.getElementById('charCount')
+
+  // Function to clean problematic characters
+  function cleanInput(text) {
+    // Replace smart quotes with regular quotes
+    text = text.replace(/[""]/g, '"')
+    text = text.replace(/['']/g, "'")
+
+    // Remove or replace other problematic characters
+    text = text.replace(/[^\w\s.,!?;:()\-'"]/g, '') // Keep only alphanumeric, whitespace, and basic punctuation
+
+    // Normalize whitespace
+    text = text.replace(/\s+/g, ' ').trim()
+
+    return text
+  }
 
   // Initialize the character count
   charCount.textContent = textarea.value.length
 
   textarea.addEventListener('input', () => {
-    const count = textarea.value.length
+    let count = textarea.value.length
     charCount.textContent = count
 
     // Visual feedback based on character count requirements
@@ -56,6 +71,12 @@
     } else {
       charCount.className = 'valid'
     }
+  })
+
+  // Clean input before form submission
+  document.getElementById('problemForm').addEventListener('submit', (e) => {
+    const cleanedValue = cleanInput(textarea.value)
+    textarea.value = cleanedValue
   })
 
   // Trigger the input event once to set initial state

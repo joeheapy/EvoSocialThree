@@ -41,6 +41,11 @@ class Strategy(BaseModel):
         default=None,
         description="Calculated payoff for epoch 0 using the formula: weight * (-delta) - private_cost"
     )
+    # Behavior share field (optional, will be set by behavior shares API)
+    behavior_share_epoch_0: float = Field(
+        default=None,
+        description="Proportion of actor's behavior allocated to this strategy at epoch 0"
+    )
 
 
 class ActorEntry(BaseModel):

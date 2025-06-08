@@ -8,36 +8,21 @@
 
 {% elif results.payoffs_analysis %}
 <!-- Analysis results -->
-<div class="outcome-targets-container">
-  <div class="outcome-targets-sources">
-    <h4>Strategic Analysis of Pay-off Patterns</h4>
-
-    <!-- Overall Patterns Section -->
-    <div class="payoff-analysis-section">
-      <h5 class="payoff-analysis-title">Overall Patterns</h5>
-      <ul class="payoff-analysis-list">
-        {% for pattern in results.payoffs_analysis.overall_patterns %}
-        <li>{{ pattern }}</li>
-        {% endfor %}
-      </ul>
-    </div>
-
+<div class="payoffs-analysis-container">
+  <div class="payoffs-analysis-content">
     <!-- Strategy Analyses Section -->
     {% if results.payoffs_analysis.strategy_analyses %}
-    <div class="payoff-analysis-section">
-      <h5 class="payoff-analysis-title">Representative Strategy Analysis</h5>
-
+    <div class="strategy-examples-section">
       {% for analysis in results.payoffs_analysis.strategy_analyses %}
       <div class="strategy-analysis-card">
-        <div class="strategy-header">
-          <strong class="strategy-id">{{ analysis.strategy_id }}</strong>
-          <span class="strategy-meta">
-            ({{ analysis.actor_sector }} • {{ analysis.commitment_level }}
-            Commitment)
-          </span>
-        </div>
-
-        <div class="strategy-header">
+        <div class="strategy-card-header">
+          <div class="strategy-id-section">
+            <strong class="strategy-id">{{ analysis.strategy_id }}</strong>
+            <span class="strategy-meta">
+              {{ analysis.actor_sector }} • {{ analysis.commitment_level }}
+              Commitment
+            </span>
+          </div>
           <span
             class="payoff-category-badge {% if analysis.payoff_category == 'Best Performer' %}payoff-category-best {% elif analysis.payoff_category == 'Floor Strategy' %}payoff-category-floor {% elif analysis.payoff_category == 'Middle Ground' %}payoff-category-middle {% elif analysis.payoff_category == 'Marginal Strategy' %}payoff-category-marginal {% else %}payoff-category-default{% endif %}"
           >
@@ -45,11 +30,18 @@
           </span>
         </div>
 
-        <div class="strategy-economic-desc">
+        <!-- Strategy Description -->
+        {% if analysis.strategy_description %}
+        <div class="strategy-description">
+          {{ analysis.strategy_description }}
+        </div>
+        {% endif %}
+
+        <div class="strategy-economic-analysis">
           {{ analysis.economic_attractiveness }}
         </div>
 
-        <ul class="strategy-insights">
+        <ul class="strategy-key-insights">
           {% for insight in analysis.key_insights %}
           <li>{{ insight }}</li>
           {% endfor %}
@@ -59,20 +51,7 @@
     </div>
     {% endif %}
 
-    <!-- Strategic Implications Section -->
-    <div class="payoff-analysis-section">
-      <h5 class="payoff-analysis-title">Strategic Implications</h5>
-      <div class="strategic-implications-box">
-        <ul class="strategic-implications-list">
-          {% for implication in results.payoffs_analysis.strategic_implications
-          %}
-          <li>{{ implication }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-
-    <div class="payoff-analysis-disclaimer">
+    <div class="payoffs-analysis-disclaimer">
       This analysis examines the economic attractiveness of strategies based on
       calculated payoffs, helping identify which actors are most likely to
       participate and which interventions may need additional incentives.
@@ -82,11 +61,9 @@
 
 {% elif results.payoffs_analysis_error %}
 <!-- Error block with retry -->
-<div class="outcome-targets-container">
-  <div class="outcome-targets-sources">
-    <p style="color: #dc3545">
-      Could not generate payoff analysis at this time.
-    </p>
+<div class="payoffs-analysis-container">
+  <div class="payoffs-analysis-content error">
+    <p>Could not generate payoff analysis at this time.</p>
     <div class="analysis-trigger">
       {% set action_url = url_for('analyze_payoffs') %} {% set button_text =
       'Retry Analysis' %} {% set disabled = false %} {% include
