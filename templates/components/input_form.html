@@ -50,7 +50,7 @@
     text = text.replace(/['']/g, "'")
 
     // Remove or replace other problematic characters
-    text = text.replace(/[^\w\s.,!?;:()\-'"]/g, '') // Keep only alphanumeric, whitespace, and basic punctuation
+    text = text.replace(/[^\w\s.,!?;:()\-'"%]/g, '') // Keep only alphanumeric, whitespace, and basic punctuation
 
     // Normalize whitespace
     text = text.replace(/\s+/g, ' ').trim()
