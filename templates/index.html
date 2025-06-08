@@ -47,6 +47,7 @@
             Identify the major sectors and actors involved in the problem. This
             analysis will help us understand who can contribute to solving the
             problem and how their actions impact the system.
+            <span class="time-label">10-15 seconds</span>
           </p>
         </div>
 
@@ -67,7 +68,7 @@
             track progress towards solving the problem. These targets will be
             used to evaluate the effectiveness of strategies and interventions.
             <strong>Choose one</strong> of the three targets suggest to drive
-            the simluation.
+            the simluation. <span class="time-label">8-10 seconds</span>
           </p>
         </div>
         {% include 'components/outcome_targets.html' %}
@@ -89,13 +90,14 @@
             each strategy. Payoffs drive the evolutionary dynamics of the
             system. Then, estimate the share of behaviours for each strategy
             based on the calculated payoffs.
+            <span class="time-label">40-50 seconds</span>
           </p>
         </div>
         {% include 'components/payoffs_table.html' %}
 
         <!-- Pay-offs analysis - Only show if payoffs table has data -->
         {% if results.payoffs_table %}
-        <div id="payoffs-analysis-section">
+        <div id="payoffs-analysis-section" class="content-section">
           <div class="step-heading">
             <span class="step-label-dark">Step 5</span>
             <h2>Quickly analyse three example strategies</h2>
@@ -104,6 +106,7 @@
             <p class="step-description">
               Pick three example strategies from the range and provide a quick
               analysis to indicate their economic attractiveness.
+              <span class="time-label">10-15 seconds</span>
             </p>
           </div>
           {% include 'components/payoffs_analysis.html' %}
