@@ -1,8 +1,8 @@
 <div class="hero">
   <div class="hero-content">
     <div class="step-heading">
-      <span class="step-label-dark">Step 1</span>
-      <h1>What's the problem?</h1>
+      <span class="step-label-light">Step 1</span>
+      <h2 style="color: white">Describe a social problem</h2>
     </div>
     <form id="problemForm" method="POST" action="/submit" class="spinner-form">
       <div class="textarea-container">
@@ -11,13 +11,13 @@
           name="problem"
           required
           minlength="75"
-          maxlength="300"
+          maxlength="500"
           placeholder="Describe the problem..."
         >
 {{ results['problem'] }}</textarea
         >
         <div class="character-count">
-          <span id="charCount">{{ results['problem']|length }}</span>/300
+          <span id="charCount">{{ results['problem']|length }}</span>/500
           characters (75 minimum)
         </div>
       </div>

@@ -2,7 +2,7 @@
 <!-- Show button to trigger outcome targets analysis -->
 <div class="analysis-trigger">
   {% set action_url = url_for('analyze_outcome_targets') %} {% set button_text =
-  'Analyze Outcome Targets' %} {% set disabled = false %} {% include
+  'Suggest Outcome Targets' %} {% set disabled = false %} {% include
   'components/analysis_button.html' %}
 </div>
 {% elif results.outcome_targets and results.outcome_targets.targets %}

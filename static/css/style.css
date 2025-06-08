@@ -65,7 +65,7 @@ p {
   padding: 20px 5%;
   background-color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  position: sticky;
+  position: static;
   top: 0;
   z-index: 100;
 }
@@ -230,7 +230,7 @@ p {
 
 .step-label-light {
   display: inline-block;
-  background-color: white;
+  background-color: var(--jrf-mid-gray);
   color: var(--jrf-purple);
   font-size: 14px;
   font-weight: 500;
@@ -243,7 +243,7 @@ p {
 
 .step-label-dark {
   display: inline-block;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--jrf-purple);
   color: white;
   font-size: 14px;
   font-weight: 500;
@@ -736,7 +736,7 @@ p {
   padding: 12px 15px;
   border-radius: 6px;
   margin-bottom: 15px;
-  font-style: italic;
+  font-weight: bold;
   color: var(--jrf-text);
   border-left: 3px solid var(--jrf-blue);
   line-height: 1.5;
