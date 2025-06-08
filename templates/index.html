@@ -23,8 +23,7 @@
     <header class="header">
       <div class="header-content">
         <a href="#" class="logo"
-          ><strong>EvoSocialOne</strong> (Computation social policymaking
-          simulator)</a
+          ><strong>EvoSocialOne</strong> (Computation policymaking simulator)</a
         >
       </div>
     </header>
@@ -40,14 +39,15 @@
       {% if results.problem_submitted %}
       <section id="step-2-actors-analysis" class="content-section">
         <div class="step-heading">
-          <span class="step-label-light">Step 2</span>
-          <h2>Key Organisations &amp; Actors</h2>
+          <span class="step-label-dark">Step 2</span>
+          <h2>Infer actors in the ecosystem</h2>
         </div>
         <div>
           <p class="step-description">
-            Identify the key organisations and actors involved in the problem.
-            This analysis will help us understand who can contribute to solving
-            the problem and how their actions impact the system.
+            Identify the major sectors and actors involved in the problem. This
+            analysis will help us understand who can contribute to solving the
+            problem and how their actions impact the system.
+            <span class="time-label">10-15 seconds</span>
           </p>
         </div>
 
@@ -59,14 +59,16 @@
       {% if results.actors_table %}
       <section id="step-3-outcome-targets" class="content-section">
         <div class="step-heading">
-          <span class="step-label-light">Step 3</span>
-          <h2>Measurable Outcome Targets</h2>
+          <span class="step-label-dark">Step 3</span>
+          <h2>Propose measureable system outcomes</h2>
         </div>
         <div>
           <p class="step-description">
-            Define measurable outcome targets that can be used to track progress
-            towards solving the problem. These targets will help us evaluate the
-            effectiveness of strategies and interventions.
+            Propose desirable measurable outcome targets that can be used to
+            track progress towards solving the problem. These targets will be
+            used to evaluate the effectiveness of strategies and interventions.
+            <strong>Choose one</strong> of the three targets suggest to drive
+            the simluation. <span class="time-label">8-10 seconds</span>
           </p>
         </div>
         {% include 'components/outcome_targets.html' %}
@@ -77,30 +79,34 @@
       {% if results.system_objective_selected %}
       <section id="step-4-payoffs" class="content-section">
         <div class="step-heading">
-          <span class="step-label-light">Step 4</span>
-          <h2>Strategy Payoffs</h2>
+          <span class="step-label-dark">Step 4</span>
+          <h2>Calculate payoffs and estimate the share of behaviours</h2>
         </div>
         <div>
           <p class="step-description">
             Calculate the payoffs for each strategy, considering both the impact
-            on the target metric and the private costs to each actor. These
-            payoffs will drive the evolutionary dynamics of the system.
+            on the target metric and the private costs to each actor. The size
+            of each payoff is an indicator of how likley an actor is to adopt
+            each strategy. Payoffs drive the evolutionary dynamics of the
+            system. Then, estimate the share of behaviours for each strategy
+            based on the calculated payoffs.
+            <span class="time-label">40-50 seconds</span>
           </p>
         </div>
         {% include 'components/payoffs_table.html' %}
 
         <!-- Pay-offs analysis - Only show if payoffs table has data -->
         {% if results.payoffs_table %}
-        <div id="payoffs-analysis-section">
+        <div id="payoffs-analysis-section" class="content-section">
           <div class="step-heading">
-            <span class="step-label-light">Step 5</span>
-            <h2>Pay-off Analysis</h2>
+            <span class="step-label-dark">Step 5</span>
+            <h2>Quickly analyse three example strategies</h2>
           </div>
           <div>
             <p class="step-description">
-              Strategic analysis of payoff patterns to understand economic
-              attractiveness of strategies and identify which actors are most
-              likely to participate.
+              Pick three example strategies from the range and provide a quick
+              analysis to indicate their economic attractiveness.
+              <span class="time-label">10-15 seconds</span>
             </p>
           </div>
           {% include 'components/payoffs_analysis.html' %}

@@ -7,6 +7,7 @@
   --jrf-light-gray: #ffffff; /* WHITE for content sections */
   --jrf-mid-gray: #e6e6e6; /* Borders */
   --jrf-dark-gray: #6d6e71; /* Secondary text */
+  --jrf-divider: #586387; /* Horizonal divider */
 }
 
 * {
@@ -65,7 +66,7 @@ p {
   padding: 20px 5%;
   background-color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  position: sticky;
+  position: static;
   top: 0;
   z-index: 100;
 }
@@ -230,7 +231,7 @@ p {
 
 .step-label-light {
   display: inline-block;
-  background-color: white;
+  background-color: var(--jrf-mid-gray);
   color: var(--jrf-purple);
   font-size: 14px;
   font-weight: 500;
@@ -243,7 +244,7 @@ p {
 
 .step-label-dark {
   display: inline-block;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--jrf-purple);
   color: white;
   font-size: 14px;
   font-weight: 500;
@@ -736,7 +737,7 @@ p {
   padding: 12px 15px;
   border-radius: 6px;
   margin-bottom: 15px;
-  font-style: italic;
+  font-weight: bold;
   color: var(--jrf-text);
   border-left: 3px solid var(--jrf-blue);
   line-height: 1.5;
@@ -776,6 +777,20 @@ p {
   border-radius: 6px;
   border-left: 3px solid var(--jrf-dark-gray);
   line-height: 1.5;
+}
+
+/* Add divider lines at the top of content sections */
+.content-section {
+  border-top: 2px solid var(--jrf-divider);
+  padding-top: 40px;
+  margin-top: 40px;
+}
+
+/* Remove the top border for the first content section (Step 2) */
+.content-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
 }
 
 /* Mobile Responsive Adjustments */
@@ -861,4 +876,14 @@ p {
   .analysis-section-title {
     font-size: 16px;
   }
+}
+
+.time-label {
+  background-color: var(--jrf-blue);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
