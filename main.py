@@ -150,7 +150,7 @@ def infer_payoffs():
         
         if selected_index is not None and results.get('outcome_targets'):
             try:
-                system_objective = results['outcome_targets'].targets[selected_index].description
+                system_objective = results['outcome_targets'].targets[selected_index].metric_name
                 print(f"Using system objective: {system_objective}")
             except (IndexError, AttributeError):
                 print("Could not retrieve system objective, using default")
@@ -175,9 +175,24 @@ def infer_payoffs():
                 # Call the behavior shares inference API
                 from api.openai.infer_behavior_shares import infer_behavior_shares as infer_behavior_shares_fn
                 try:
+                    # Debug: Check the payoffs_data before sending to behavior shares
+                    print(f"DEBUG: Sending {len(payoffs_data)} actors to behavior shares")
+                    for i, actor in enumerate(payoffs_data):
+                        print(f"DEBUG: Actor {i} has {len(actor.strategies)} strategies")
+                        for j, strategy in enumerate(actor.strategies):
+                            print(f"DEBUG: Strategy {j} behavior_share_epoch_0: {getattr(strategy, 'behavior_share_epoch_0', 'NOT SET')}")
+                    
                     actors_with_behavior_shares = infer_behavior_shares_fn(problem, payoffs_data, epoch=0)
                     
                     if actors_with_behavior_shares:
+                        # Debug: Check the returned data
+                        print(f"DEBUG: Received {len(actors_with_behavior_shares)} actors from behavior shares")
+                        for i, actor in enumerate(actors_with_behavior_shares):
+                            print(f"DEBUG: Actor {i} has {len(actor.strategies)} strategies")
+                            for j, strategy in enumerate(actor.strategies):
+                                share = getattr(strategy, 'behavior_share_epoch_0', None)
+                                print(f"DEBUG: Strategy {j} behavior_share_epoch_0: {share}")
+                        
                         # Update the payoffs table with behavior share data
                         results['payoffs_table'] = PayoffsContainer(actors_with_behavior_shares)
                         print("Behavior shares inference successful")
@@ -237,7 +252,6 @@ def analyze_payoffs():
             if results.get('outcome_targets') and results.get('selected_objective_index') is not None:
                 idx = results['selected_objective_index']
                 if 0 <= idx < len(results['outcome_targets'].targets):
-                    # Fix: Use 'metric_name' which is the correct attribute from OutcomeTarget
                     selected_objective = results['outcome_targets'].targets[idx].metric_name
             
             print(f"DEBUG: Selected objective: {selected_objective}")

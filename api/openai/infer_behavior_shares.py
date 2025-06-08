@@ -74,11 +74,19 @@ Consider that actors typically:
 {actors_json}
 
 **Output Requirements**
-- Return the EXACT same JSON structure with behavior_share_epoch_0 added to each strategy
+- Return a JSON object with an "actors" field containing the array of actors
+- Each actor should have behavior_share_epoch_0 added to each strategy
 - Keep all existing fields unchanged
 - Ensure all behavior shares sum to 1.000 for each actor
 - Use exactly 3 decimal places
 - Base estimates on current, verifiable UK policy and spending data
+
+Return the result in this exact format:
+{{
+  "actors": [
+    // ... array of actor objects with behavior_share_epoch_0 added to each strategy
+  ]
+}}
 
 {format_instructions}
 """
@@ -127,7 +135,8 @@ def infer_behavior_shares(problem_description: str, actors_with_payoffs: List[Ac
     for i, actor in enumerate(actors_with_payoffs):
         print(f"DEBUG: Actor {i}: {actor.actor_id}, strategies: {len(actor.strategies)}")
         for j, strategy in enumerate(actor.strategies):
-            print(f"DEBUG: Strategy {j}: {strategy.id}, current behavior_share: {strategy.behavior_share_epoch_0}")
+            current_share = getattr(strategy, 'behavior_share_epoch_0', None)
+            print(f"DEBUG: Strategy {j}: {strategy.id}, current behavior_share: {current_share}")
     
     # Convert actors to JSON for the prompt
     actors_json = json.dumps([actor.model_dump() for actor in actors_with_payoffs], indent=2)
@@ -149,14 +158,20 @@ def infer_behavior_shares(problem_description: str, actors_with_payoffs: List[Ac
                 print(f"DEBUG: Actor {i}: {actor.actor_id}")
                 total_share = 0
                 for j, strategy in enumerate(actor.strategies):
-                    share = strategy.behavior_share_epoch_0 or 0
-                    total_share += share
+                    share = getattr(strategy, 'behavior_share_epoch_0', None)
+                    if share is not None:
+                        total_share += share
                     print(f"DEBUG: Strategy {j}: {strategy.id}, behavior_share: {share}")
                 print(f"DEBUG: Total share for {actor.actor_id}: {total_share}")
             
             # Validate that behavior shares sum to 1.0 for each actor
             for actor in result.actors:
-                total_share = sum(strategy.behavior_share_epoch_0 or 0 for strategy in actor.strategies)
+                total_share = 0
+                for strategy in actor.strategies:
+                    share = getattr(strategy, 'behavior_share_epoch_0', None)
+                    if share is not None:
+                        total_share += share
+                
                 if abs(total_share - 1.0) > 0.001:  # Allow small floating point errors
                     print(f"Warning: Actor {actor.actor_id} behavior shares sum to {total_share:.3f}, not 1.000")
             

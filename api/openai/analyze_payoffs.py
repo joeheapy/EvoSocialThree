@@ -20,32 +20,14 @@ class StrategyAnalysis(BaseModel):
     strategy_id: str = Field(description="Strategy ID (e.g., 'CG-1')")
     actor_sector: str = Field(description="Actor sector")
     commitment_level: str = Field(description="High/Medium/Low commitment")
+    strategy_description: str = Field(description="Brief description of what the strategy involves")
     payoff_category: str = Field(description="Best Performer/Floor Strategy/Middle Ground/etc.")
     economic_attractiveness: str = Field(description="Assessment of economic viability")
     key_insights: List[str] = Field(description="List of 2-3 key analytical points")
 
 
 class PayoffAnalysisResponse(BaseModel):
-    overall_patterns: List[str] = Field(description="3-4 high-level patterns across all strategies")
     strategy_analyses: List[StrategyAnalysis] = Field(description="Analysis of 3-4 representative strategies")
-    strategic_implications: List[str] = Field(description="2-3 implications for policy/intervention design")
-
-
-class PayoffAnalysisContainer(BaseModel):
-    """Container for payoff analysis results"""
-    analysis: PayoffAnalysisResponse = Field(description="The analysis results")
-    
-    @property 
-    def overall_patterns(self):
-        return self.analysis.overall_patterns
-    
-    @property
-    def strategy_analyses(self):
-        return self.analysis.strategy_analyses
-    
-    @property
-    def strategic_implications(self):
-        return self.analysis.strategic_implications
 
 
 # Prompt template
@@ -58,16 +40,20 @@ You have calculated payoffs for various actors and strategies to address: {probl
 The system objective being optimized is: {system_objective}
 
 **Your Task**
-Analyze the payoff patterns to provide strategic insights. Focus on:
+Analyze the payoff patterns and select exactly 3 representative strategies that illustrate different payoff patterns:
+- Choose strategies with different payoff ranges (high, medium, floor values)
+- Include different actor types and commitment levels
+- Focus on what makes each strategy economically attractive/unattractive
+- Include the strategy description from the payoff data for each selected strategy
 
-1. **Overall Patterns**: Identify 3-4 high-level patterns across all strategies (e.g., "High-commitment strategies dominate", "Private sector shows limited engagement", etc.)
-
-2. **Representative Strategy Analysis**: Select 3-4 strategies that illustrate different payoff patterns:
-   - Choose strategies with different payoff ranges (high, medium, floor values)
-   - Include different actor types and commitment levels
-   - Focus on what makes each strategy economically attractive/unattractive
-
-3. **Strategic Implications**: Identify 2-3 key implications for policy makers and intervention designers
+**For Each Selected Strategy, Include:**
+- **strategy_id**: The strategy ID (e.g., 'CG-1')
+- **actor_sector**: The sector this actor belongs to
+- **commitment_level**: High/Medium/Low commitment level
+- **strategy_description**: Copy the exact description from the payoff data
+- **payoff_category**: Categorize as Best Performer/Floor Strategy/Middle Ground/etc.
+- **economic_attractiveness**: Assessment of why this strategy is/isn't economically viable
+- **key_insights**: 2-3 bullet points about what makes this strategy significant
 
 **Payoff Data Analysis**
 For each strategy, consider:
@@ -92,6 +78,7 @@ For each strategy, consider:
 - Explain the economic logic behind actor decisions
 - Use clear, policy-relevant language
 - Focus on practical implications for intervention design
+- Copy strategy descriptions exactly from the input data
 
 {format_instructions}
 """
@@ -137,7 +124,7 @@ def format_payoffs_for_analysis(actors: List[ActorEntry]) -> str:
     return "\n".join(formatted_data)
 
 
-def analyze_payoffs(problem_description: str, actors: List[ActorEntry], system_objective: str = "the social problem") -> PayoffAnalysisContainer:
+def analyze_payoffs(problem_description: str, actors: List[ActorEntry], system_objective: str = "the social problem") -> PayoffAnalysisResponse:
     """
     Generate strategic analysis of payoff patterns.
     """
@@ -157,17 +144,14 @@ def analyze_payoffs(problem_description: str, actors: List[ActorEntry], system_o
         
         print(f"Generated analysis with {len(result.strategy_analyses)} strategy analyses")
         
-        # Wrap in container
-        return PayoffAnalysisContainer(analysis=result)
+        # Return the result directly, not wrapped in a container
+        return result
         
     except Exception as e:
         print(f"Error in payoff analysis: {e}")
         import traceback
         traceback.print_exc()
-        # Return container with empty analysis on error
-        empty_analysis = PayoffAnalysisResponse(
-            overall_patterns=["Analysis temporarily unavailable"],
-            strategy_analyses=[],
-            strategic_implications=["Analysis temporarily unavailable"]
+        # Return simple response with empty analysis on error
+        return PayoffAnalysisResponse(
+            strategy_analyses=[]
         )
-        return PayoffAnalysisContainer(analysis=empty_analysis)
