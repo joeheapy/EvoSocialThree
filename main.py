@@ -116,7 +116,7 @@ def analyze_actors():
         else:
             results['actors_table_error'] = True
     
-    return redirect(url_for('hello_world'))
+    return redirect(url_for('hello_world') + '#step-2-actors-analysis')
 
 @app.route('/analyze_outcome_targets', methods=['POST'])
 def analyze_outcome_targets():
@@ -131,7 +131,26 @@ def analyze_outcome_targets():
         else:
             results['outcome_targets_error'] = True
     
-    return redirect(url_for('hello_world'))
+    return redirect(url_for('hello_world') + '#step-3-outcome-targets')
+
+
+@app.route('/select_objective', methods=['POST'])
+def select_objective():
+    """Endpoint for selecting system objective"""
+    objective_index = request.form.get('objective_index')
+    if objective_index is not None:
+        print(f"\n--- SELECTING SYSTEM OBJECTIVE {objective_index} ---")
+        results['system_objective_selected'] = True
+        results['selected_objective_index'] = int(objective_index)
+        # Reset payoffs and analysis when objective changes
+        results['payoffs_table'] = None
+        results['payoffs_table_error'] = False
+        results['payoffs_analysis'] = None
+        results['payoffs_analysis_error'] = False
+        print(f"System objective {objective_index} selected")
+    
+        return redirect(url_for('hello_world') + '#step-4-payoffs')
+
 
 @app.route('/infer_payoffs', methods=['POST'])
 def infer_payoffs():
@@ -217,22 +236,7 @@ def infer_payoffs():
     
     return redirect(url_for('hello_world') + '#step-4-payoffs')
 
-@app.route('/select_objective', methods=['POST'])
-def select_objective():
-    """Endpoint for selecting system objective"""
-    objective_index = request.form.get('objective_index')
-    if objective_index is not None:
-        print(f"\n--- SELECTING SYSTEM OBJECTIVE {objective_index} ---")
-        results['system_objective_selected'] = True
-        results['selected_objective_index'] = int(objective_index)
-        # Reset payoffs and analysis when objective changes
-        results['payoffs_table'] = None
-        results['payoffs_table_error'] = False
-        results['payoffs_analysis'] = None
-        results['payoffs_analysis_error'] = False
-        print(f"System objective {objective_index} selected")
-    
-    return redirect(url_for('hello_world'))
+
 
 @app.route('/analyze_payoffs', methods=['POST'])
 def analyze_payoffs():
@@ -282,7 +286,7 @@ def analyze_payoffs():
         print("No payoff data available for analysis")
         results['payoffs_analysis_error'] = True
     
-    return redirect(url_for('hello_world') + '#payoffs-analysis-section')
+    return redirect(url_for('hello_world') + '#step-5-analyse-payoffs')
 
 if __name__ == '__main__':
     # Open browser in a separate thread
