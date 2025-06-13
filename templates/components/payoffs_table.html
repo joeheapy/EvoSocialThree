@@ -2,10 +2,241 @@
 {% if not results.payoffs_table and not results.payoffs_table_error %}
 <!-- Trigger button when no data yet -->
 <div class="analysis-trigger">
-  {% set action_url = url_for('infer_payoffs') %} {% set button_text =
-  'Calculate Pay-offs' %} {% set disabled = false %} {% include
-  'components/analysis_button.html' %}
+  <button
+    id="calculate-payoffs-btn"
+    class="analysis-button"
+    onclick="startPayoffCalculation()"
+  >
+    Calculate Pay-offs
+  </button>
+
+  <!-- Progress indicator -->
+  <div id="payoff-progress" style="display: none">
+    <div class="progress-bar">
+      <div
+        id="progress-fill"
+        style="
+          width: 0%;
+          background: #007cba;
+          height: 20px;
+          transition: width 0.3s;
+        "
+      ></div>
+    </div>
+    <p id="progress-message">Starting calculation...</p>
+  </div>
+
+  <!-- Streaming results container -->
+  <div id="payoff-results-stream" style="display: none">
+    <div class="outcome-targets-container">
+      <!-- Column explanations table (existing code) -->
+      <div class="outcome-targets-sources">
+        <h4>Column Explanations</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+          <thead>
+            <tr style="background-color: #f8f8f8">
+              <th
+                style="
+                  padding: 4px 8px;
+                  text-align: left;
+                  border-bottom: 1px solid #ddd;
+                  font-weight: 600;
+                "
+              >
+                Column
+              </th>
+              <th
+                style="
+                  padding: 4px 8px;
+                  text-align: left;
+                  border-bottom: 1px solid #ddd;
+                  font-weight: 600;
+                "
+              >
+                What it tells you
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+                <strong>Δ effect</strong> ("delta effect")
+              </td>
+              <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+                The benefit. The estimated impact on the headline problem. A
+                <strong>negative</strong> number means the strategy
+                <em>reduces</em> the problem; a <strong>positive</strong> number
+                means it <em>makes things worse</em>.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+                <strong>Private cost</strong>
+              </td>
+              <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+                The cost assesses the effort or burden borne by the actor to
+                pursue a strategy. It includes not just money, but also
+                political or reputational cost. Higher figures mean greater
+                cost.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+                <strong>Weight</strong>
+              </td>
+              <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+                How strongly this actor genuinely values improvement in the
+                outcome target. Based on their track record of actual actions in
+                the UK, not just stated intentions. Values range from 0
+                (indifferent) to 1 (deeply committed).
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+                <strong>Pay-off</strong>
+              </td>
+              <td style="padding: 4px 8px; border-bottom: 1px solid #eee">
+                The overall attractiveness of the strategy to the actor.
+                Calculated as: weight × (−Δ effect) − private cost, with a
+                minimum floor to ensure positive values. Higher values indicate
+                more attractive strategies.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 8px"><strong>Behavior Share</strong></td>
+              <td style="padding: 4px 8px">
+                The proportion of the actor's current behavior allocated to this
+                strategy today. Based on recent UK policy actions, spending
+                patterns, and resource allocation. All strategies for an actor
+                sum to 1.000.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="payoffs-table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Sector Actor</th>
+            <th>Strategy ID</th>
+            <th>Commitment</th>
+            <th>Δ effect</th>
+            <th>Private cost</th>
+            <th>Weight</th>
+            <th>Pay-off</th>
+            <th>Behavior Share</th>
+            <th>Short description</th>
+          </tr>
+        </thead>
+        <tbody id="payoff-table-body">
+          <!-- Rows will be added dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
+
+<script>
+  function startPayoffCalculation() {
+    const btn = document.getElementById('calculate-payoffs-btn')
+    const progress = document.getElementById('payoff-progress')
+    const results = document.getElementById('payoff-results-stream')
+    const progressFill = document.getElementById('progress-fill')
+    const progressMessage = document.getElementById('progress-message')
+    const tableBody = document.getElementById('payoff-table-body')
+
+    btn.style.display = 'none'
+    progress.style.display = 'block'
+
+    // EventSource automatically uses GET method
+    const eventSource = new EventSource('/infer_payoffs')
+
+    eventSource.onmessage = function (event) {
+      const data = JSON.parse(event.data)
+
+      switch (data.status) {
+        case 'starting':
+        case 'progress':
+          progressMessage.textContent = data.message
+          if (data.progress) {
+            progressFill.style.width = data.progress + '%'
+          }
+          break
+
+        case 'partial_result':
+          // Show results container if first result
+          if (tableBody.children.length === 0) {
+            results.style.display = 'block'
+          }
+
+          // Add actor's strategies to table
+          const actor = data.actor
+          actor.strategies.forEach((strat, index) => {
+            const row = document.createElement('tr')
+            row.innerHTML = `
+            ${
+              index === 0
+                ? `<td rowspan="${actor.strategies.length}">${actor.sector}</td>`
+                : ''
+            }
+            <td><strong>${strat.id}</strong></td>
+            <td>${strat.commitment_level}</td>
+            <td>${strat.delta >= 0 ? '+' : ''}${strat.delta.toFixed(3)}</td>
+            <td>${strat.private_cost.toFixed(3)}</td>
+            <td>${strat.weight.toFixed(3)}</td>
+            <td>${
+              strat.payoff_epoch_0 !== null
+                ? strat.payoff_epoch_0.toFixed(6)
+                : 'N/A'
+            }</td>
+            <td>${
+              strat.behavior_share_epoch_0 !== null
+                ? strat.behavior_share_epoch_0.toFixed(3)
+                : '<em>Calculating...</em>'
+            }</td>
+            <td>${strat.description}</td>
+          `
+            tableBody.appendChild(row)
+          })
+
+          if (data.progress) {
+            progressFill.style.width = data.progress + '%'
+          }
+          break
+
+        case 'complete':
+          progressMessage.textContent = data.message
+          progressFill.style.width = '100%'
+          eventSource.close()
+          // Reload the page to show results after a short delay
+          setTimeout(() => {
+            window.location.reload()
+          }, 1500)
+          break
+
+        case 'error':
+          progressMessage.textContent = 'Error: ' + data.message
+          progressMessage.style.color = 'red'
+          eventSource.close()
+          break
+      }
+    }
+
+    eventSource.onerror = function (event) {
+      console.error('EventSource error:', event)
+      progressMessage.textContent = 'Connection error occurred'
+      progressMessage.style.color = 'red'
+      eventSource.close()
+    }
+
+    eventSource.onopen = function (event) {
+      console.log('EventSource connection opened')
+    }
+  }
+</script>
 
 {% elif results.payoffs_table and results.payoffs_table.actors %}
 <!-- Column descriptions div (styled like Sources in outcome_targets) -->
