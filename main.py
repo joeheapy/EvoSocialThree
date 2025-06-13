@@ -1,11 +1,12 @@
 import webbrowser
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, Response
 import os
 from dotenv import load_dotenv
 import html
 from config import DEFAULT_PROBLEM_TEXT
 from api.openai.infer_actors import infer_actors_from_problem
 from api.openai.infer_outcome_target import infer_outcome_targets_from_problem
+import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -152,14 +153,100 @@ def select_objective():
         return redirect(url_for('hello_world') + '#step-4-payoffs')
 
 
-@app.route('/infer_payoffs', methods=['POST'])
+# Change the route to accept GET requests for EventSource
+@app.route('/infer_payoffs', methods=['GET', 'POST'])
 def infer_payoffs():
-    """Endpoint for inferring payoffs from actors data"""
+    """Endpoint for inferring payoffs from actors data with streaming support"""
+    # Check if this is a GET request (EventSource) - streaming
+    if request.method == 'GET':
+        return infer_payoffs_stream()
+    else:
+        # POST request - keep existing non-streaming behavior for backwards compatibility
+        return infer_payoffs_non_stream()
+
+def infer_payoffs_stream():
+    """Streaming version of payoffs inference"""
+    def generate():
+        try:
+            if not results.get('actors_table'):
+                yield f"data: {json.dumps({'status': 'error', 'message': 'No actors data available'})}\n\n"
+                return
+                
+            yield f"data: {json.dumps({'status': 'starting', 'message': 'Initializing payoff calculations...'})}\n\n"
+            
+            print("\n--- INFERRING PAYOFFS (STREAMING) ---")
+            
+            # Convert actors data to JSON string for the API
+            actors_json = json.dumps([actor.model_dump() for actor in results['actors_table'].actors], indent=2)
+            problem = results.get('problem', '')
+            
+            # Get the selected system objective
+            selected_index = results.get('selected_objective_index')
+            system_objective = "the social problem"  # default
+            
+            if selected_index is not None and results.get('outcome_targets'):
+                try:
+                    system_objective = results['outcome_targets'].targets[selected_index].metric_name
+                    print(f"Using system objective: {system_objective}")
+                except (IndexError, AttributeError):
+                    print("Could not retrieve system objective, using default")
+            
+            yield f"data: {json.dumps({'status': 'progress', 'message': 'Estimating values...', 'progress': 25})}\n\n"
+            
+            # Call the payoffs inference API
+            from api.openai.infer_payoffs import infer_payoffs
+            payoffs_data = infer_payoffs(problem, actors_json, system_objective)
+            
+            yield f"data: {json.dumps({'status': 'progress', 'message': 'Processing payoffs data...', 'progress': 50})}\n\n"
+            
+            if payoffs_data:
+                # Create a simple container object to match the template expectations
+                class PayoffsContainer:
+                    def __init__(self, actors):
+                        self.actors = actors
+                
+                results['payoffs_table'] = PayoffsContainer(payoffs_data)
+                results['payoffs_table_error'] = False
+                print("Payoffs inference successful")
+                
+                yield f"data: {json.dumps({'status': 'progress', 'message': 'Calculating behaviour shares...', 'progress': 70})}\n\n"
+                
+                # AUTOMATICALLY CALCULATE BEHAVIOR SHARES
+                print("\n--- AUTO-INFERRING BEHAVIOR SHARES ---")
+                
+                from api.openai.infer_behavior_shares import infer_behavior_shares as infer_behavior_shares_fn
+                try:
+                    actors_with_behavior_shares = infer_behavior_shares_fn(problem, payoffs_data, epoch=0)
+                    
+                    if actors_with_behavior_shares:
+                        results['payoffs_table'] = PayoffsContainer(actors_with_behavior_shares)
+                        print("Behavior shares inference successful")
+                    else:
+                        print("Behavior shares inference returned no data, keeping payoffs data")
+                        
+                except Exception as e:
+                    print(f"Error during automatic behavior shares inference: {e}")
+                    print("Continuing with payoffs data only")
+                
+                yield f"data: {json.dumps({'status': 'complete', 'message': 'Payoffs calculation complete!', 'progress': 100})}\n\n"
+                
+            else:
+                results['payoffs_table_error'] = True
+                yield f"data: {json.dumps({'status': 'error', 'message': 'Payoffs inference returned no data'})}\n\n"
+                
+        except Exception as e:
+            print(f"Error during payoffs inference: {e}")
+            results['payoffs_table_error'] = True
+            yield f"data: {json.dumps({'status': 'error', 'message': str(e)})}\n\n"
+    
+    return Response(generate(), mimetype='text/event-stream')
+
+def infer_payoffs_non_stream():
+    """Non-streaming version (your existing code)"""
     if results.get('actors_table'):
         print("\n--- INFERRING PAYOFFS ---")
         
         # Convert actors data to JSON string for the API
-        import json
         actors_json = json.dumps([actor.model_dump() for actor in results['actors_table'].actors], indent=2)
         problem = results.get('problem', '')
         
@@ -194,25 +281,9 @@ def infer_payoffs():
                 # Call the behavior shares inference API
                 from api.openai.infer_behavior_shares import infer_behavior_shares as infer_behavior_shares_fn
                 try:
-                    # Debug: Check the payoffs_data before sending to behavior shares
-                    print(f"DEBUG: Sending {len(payoffs_data)} actors to behavior shares")
-                    for i, actor in enumerate(payoffs_data):
-                        print(f"DEBUG: Actor {i} has {len(actor.strategies)} strategies")
-                        for j, strategy in enumerate(actor.strategies):
-                            print(f"DEBUG: Strategy {j} behavior_share_epoch_0: {getattr(strategy, 'behavior_share_epoch_0', 'NOT SET')}")
-                    
                     actors_with_behavior_shares = infer_behavior_shares_fn(problem, payoffs_data, epoch=0)
                     
                     if actors_with_behavior_shares:
-                        # Debug: Check the returned data
-                        print(f"DEBUG: Received {len(actors_with_behavior_shares)} actors from behavior shares")
-                        for i, actor in enumerate(actors_with_behavior_shares):
-                            print(f"DEBUG: Actor {i} has {len(actor.strategies)} strategies")
-                            for j, strategy in enumerate(actor.strategies):
-                                share = getattr(strategy, 'behavior_share_epoch_0', None)
-                                print(f"DEBUG: Strategy {j} behavior_share_epoch_0: {share}")
-                        
-                        # Update the payoffs table with behavior share data
                         results['payoffs_table'] = PayoffsContainer(actors_with_behavior_shares)
                         print("Behavior shares inference successful")
                     else:
