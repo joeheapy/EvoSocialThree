@@ -139,10 +139,10 @@
           <button
             type="button"
             onclick="runSimulation()"
-            class="btn btn-primary"
+            class="analysis-button"
             id="simulationBtn"
           >
-            🎯 Run Evolutionary Simulation
+            🎯 Run Simulation With Nudges.
           </button>
           <div
             id="simulationStatus"
@@ -154,43 +154,6 @@
         <!-- Show simulation results -->
         {% include 'components/simulation_results.html' %} {% endif %}
       </section>
-      {% endif %}
-
-      <!-- Replace the existing debug section with this enhanced version -->
-      {% if results.payoffs_table %}
-      <div
-        style="
-          background: #f0f0f0;
-          padding: 10px;
-          margin: 20px 0;
-          font-family: monospace;
-          font-size: 12px;
-          max-height: 300px;
-          overflow-y: auto;
-        "
-      >
-        <strong>Enhanced Debug Info:</strong><br />
-        Payoffs table exists: {{ results.payoffs_table is not none }}<br />
-        {% if results.payoffs_table.actors %} Number of actors: {{
-        results.payoffs_table.actors|length }}<br />
-
-        {% for actor in results.payoffs_table.actors %}
-        <br /><strong>Actor {{ loop.index }}:</strong><br />
-        - Sector: {{ actor.sector }}<br />
-        - Has strategies: {{ actor.strategies is defined }}<br />
-        {% if actor.strategies %} - Number of strategies: {{
-        actor.strategies|length }}<br />
-        {% for strategy in actor.strategies %}
-        <strong>Strategy {{ loop.index }}:</strong><br />
-        - ID: {{ strategy.id|default('Missing') }}<br />
-        - Delta: {{ strategy.delta|default('Missing') }}<br />
-        - Private cost: {{ strategy.private_cost|default('Missing') }}<br />
-        - Weight: {{ strategy.weight|default('Missing') }}<br />
-        - Behavior share: {{ strategy.behavior_share_epoch_0|default('Missing')
-        }}<br />
-        {% endfor %} {% endif %} {% endfor %} {% else %} No actors found<br />
-        {% endif %}
-      </div>
       {% endif %}
     </main>
 

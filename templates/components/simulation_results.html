@@ -12,24 +12,24 @@
         </span>
       </div>
       <div class="stat-item">
+        <span class="stat-label">Baseline Value:</span>
+        <span class="stat-value"
+          >{{
+          "%.3f"|format(results.simulation_results.simulation_params.P_baseline)
+          }}</span
+        >
+      </div>
+      <div class="stat-item">
         <span class="stat-label">Final Value:</span>
         <span class="stat-value"
           >{{ "%.3f"|format(results.simulation_results.final_value) }}</span
         >
       </div>
-      <div class="stat-item">
+      <div class="stat-item target-highlight">
         <span class="stat-label">Target Value:</span>
         <span class="stat-value"
           >{{
           "%.3f"|format(results.simulation_results.simulation_params.P_target)
-          }}</span
-        >
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Baseline Value:</span>
-        <span class="stat-value"
-          >{{
-          "%.3f"|format(results.simulation_results.simulation_params.P_baseline)
           }}</span
         >
       </div>

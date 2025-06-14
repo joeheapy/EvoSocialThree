@@ -267,7 +267,7 @@ def generate_plots(result: SimulationResult, P_baseline: float, P_target: float,
     ax1.axhline(y=P_baseline, color='gray', linestyle=':', alpha=0.7, label=f'Baseline: {P_baseline:.3f}')
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Metric Value')
-    ax1.set_title('Headline Metric Over Time')
+    # ax1.set_title('Headline Metric Over Time')
     ax1.legend()
     ax1.grid(True, alpha=0.3)
     
