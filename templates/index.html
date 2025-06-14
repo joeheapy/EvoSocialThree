@@ -133,6 +133,8 @@
           </p>
         </div>
 
+        <!-- Simulation trigger or results -->
+        {% if not results.simulation_results and not results.simulation_error %}
         <div class="action-section">
           <button
             type="button"
@@ -148,6 +150,9 @@
             style="display: none; margin-top: 15px"
           ></div>
         </div>
+        {% else %}
+        <!-- Show simulation results -->
+        {% include 'components/simulation_results.html' %} {% endif %}
       </section>
       {% endif %}
 
@@ -177,7 +182,7 @@
         actor.strategies|length }}<br />
         {% for strategy in actor.strategies %}
         <strong>Strategy {{ loop.index }}:</strong><br />
-        - ID: {{ strategy.strategy_id|default('Missing') }}<br />
+        - ID: {{ strategy.id|default('Missing') }}<br />
         - Delta: {{ strategy.delta|default('Missing') }}<br />
         - Private cost: {{ strategy.private_cost|default('Missing') }}<br />
         - Weight: {{ strategy.weight|default('Missing') }}<br />
@@ -189,7 +194,7 @@
       {% endif %}
     </main>
 
-    <!-- Replace the entire script section with this corrected version -->
+    <!-- Updated JavaScript for inline simulation results -->
     <script>
       async function runSimulation() {
         const btn = document.getElementById('simulationBtn')
@@ -223,11 +228,6 @@
             data.rows.length,
             'strategies'
           )
-          console.log('Parameters:', {
-            P_baseline: data.P_baseline,
-            P_target: data.P_target,
-            rows: data.rows.length,
-          })
 
           if (data.rows.length === 0) {
             throw new Error('No strategy data found')
@@ -256,13 +256,31 @@
             )
           }
 
-          const html = await simResponse.text()
-          console.log('Simulation completed successfully')
+          const simResults = await simResponse.json()
 
-          // Replace the entire page with simulation results
-          document.open()
-          document.write(html)
-          document.close()
+          if (!simResults.success) {
+            throw new Error(simResults.error || 'Simulation failed')
+          }
+
+          console.log('Simulation completed successfully')
+          status.innerHTML = 'Storing results...'
+
+          // Store results on server
+          const storeResponse = await fetch('/store_simulation_results', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(simResults),
+          })
+
+          if (!storeResponse.ok) {
+            throw new Error('Failed to store simulation results')
+          }
+
+          // Reload page to show results
+          window.location.href = window.location.pathname + '#step-6-simulation'
+          window.location.reload()
         } catch (error) {
           console.error('Simulation error:', error)
 

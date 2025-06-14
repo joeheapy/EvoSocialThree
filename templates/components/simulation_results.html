@@ -1,0 +1,97 @@
+{% if results.simulation_results %}
+<div class="simulation-results-container">
+  <div class="simulation-summary">
+    <h3>Simulation Summary</h3>
+    <div class="summary-stats">
+      <div class="stat-item">
+        <span class="stat-label">Target Achievement:</span>
+        <span class="stat-value">
+          {% if results.simulation_results.t_hit is not none %} ✅ Reached at
+          epoch {{ results.simulation_results.t_hit }} {% else %} ❌ Not reached
+          in {{ results.simulation_results.total_epochs }} epochs {% endif %}
+        </span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Final Value:</span>
+        <span class="stat-value"
+          >{{ "%.3f"|format(results.simulation_results.final_value) }}</span
+        >
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Target Value:</span>
+        <span class="stat-value"
+          >{{
+          "%.3f"|format(results.simulation_results.simulation_params.P_target)
+          }}</span
+        >
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Baseline Value:</span>
+        <span class="stat-value"
+          >{{
+          "%.3f"|format(results.simulation_results.simulation_params.P_baseline)
+          }}</span
+        >
+      </div>
+    </div>
+  </div>
+
+  <div class="simulation-plots">
+    <h3>Simulation Visualizations</h3>
+
+    <div class="plot-container">
+      <h4>Headline Metric Over Time</h4>
+      <img
+        src="{{ url_for('static', filename='plots/' + results.simulation_results.plot_files.metric_plot) }}"
+        alt="Metric progression over time"
+        class="simulation-plot"
+      />
+      <p class="plot-description">
+        Shows how the target metric evolves over the simulation epochs. The red
+        dashed line indicates the target value.
+      </p>
+    </div>
+
+    <div class="plot-container">
+      <h4>Strategy Shares by Actor</h4>
+      <img
+        src="{{ url_for('static', filename='plots/' + results.simulation_results.plot_files.shares_plot) }}"
+        alt="Strategy shares over time"
+        class="simulation-plot"
+      />
+      <p class="plot-description">
+        Shows how actors allocate their behavior across different strategies
+        over time. Higher-payoff strategies tend to gain larger shares.
+      </p>
+    </div>
+
+    <div class="plot-container">
+      <h4>Strategy Payoffs by Actor</h4>
+      <img
+        src="{{ url_for('static', filename='plots/' + results.simulation_results.plot_files.payoffs_plot) }}"
+        alt="Strategy payoffs over time"
+        class="simulation-plot"
+      />
+      <p class="plot-description">
+        Heatmap showing the payoff values for each strategy over time. Brighter
+        colors indicate higher payoffs.
+      </p>
+    </div>
+  </div>
+</div>
+
+{% elif results.simulation_error %}
+<div class="simulation-results-container error">
+  <p>❌ Simulation failed to complete. Please check your data and try again.</p>
+  <div class="analysis-trigger">
+    <button
+      type="button"
+      onclick="runSimulation()"
+      class="analysis-button"
+      id="retrySimulationBtn"
+    >
+      🔄 Retry Simulation
+    </button>
+  </div>
+</div>
+{% endif %}

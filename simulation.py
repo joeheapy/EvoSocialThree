@@ -71,7 +71,7 @@ def parse_rows_to_arrays(rows: List[List]) -> Tuple[np.ndarray, np.ndarray, np.n
     delta_raw = np.zeros((G, K))
     private_cost = np.zeros((G, K))
     weight = np.zeros((G, K))
-    payoff_base = np.zeros((G, K))  # NEW: base payoffs from infer_payoffs
+    payoff_base = np.zeros((G, K))  # Base payoffs from infer_payoffs
     initial_shares = np.zeros((G, K))
     
     # Fill arrays
@@ -81,7 +81,7 @@ def parse_rows_to_arrays(rows: List[List]) -> Tuple[np.ndarray, np.ndarray, np.n
             delta_raw[g, k] = strategy['delta']
             private_cost[g, k] = strategy['private_cost']
             weight[g, k] = strategy['weight']
-            payoff_base[g, k] = strategy['payoff_base']  # NEW: use pre-computed payoffs
+            payoff_base[g, k] = strategy['payoff_base']
             initial_shares[g, k] = strategy['behavior_share']
             
             if g == 0 and k < len(strategy_ids):  # Collect strategy IDs from first actor
@@ -107,7 +107,7 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
     if not rows:
         raise ValueError("No data provided for simulation")
     
-    # Parse input data - NOW INCLUDES BASE PAYOFFS
+    # Parse input data - includes base payoffs
     delta_raw, private_cost, weight, payoff_base, initial_shares, sector_names, strategy_ids = parse_rows_to_arrays(rows)
     
     G, K = delta_raw.shape
@@ -137,7 +137,7 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
     target_direction = P_target < P_baseline
     progress_needed = abs(P_target - P_baseline)
     
-    # ENHANCED: Higher learning rate for more dynamic behavior
+    # Higher learning rate for more dynamic behavior
     learning_rate = 0.3
     
     # Initialize progress_made to avoid UnboundLocalError
@@ -148,7 +148,7 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
         P_t = P_baseline + np.sum(delta_raw * share)
         P_series.append(float(P_t))
         
-        # ENHANCED: Better progress calculation
+        # Better progress calculation
         if progress_needed > 0:
             if target_direction:  # Moving down (P_target < P_baseline)
                 progress_made = max(0, (P_baseline - P_t) / progress_needed)
@@ -160,10 +160,9 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
         # Cap progress at 1.0
         progress_made = min(progress_made, 1.0)
         
-        # DEBUG: Print every 10 epochs (MOVED AFTER progress_made calculation)
+        # DEBUG: Print every 10 epochs
         if t % 10 == 0:
             print(f"DEBUG SIMULATION: Epoch {t}, P_t={P_t:.6f}, Progress={(progress_made*100):.1f}%")
-            # Note: payoff array will be available after calculation below
         
         # Calculate dynamic payoffs with enhanced bonuses
         payoff = np.zeros((G, K))
@@ -173,7 +172,7 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
                 # Start with the pre-computed base payoff from infer_payoffs
                 base_payoff = payoff_base[g, k]
                 
-                # ENHANCED: Dynamic payoff components
+                # Dynamic payoff components
                 # 1. System progress bonus (rewards collective progress)
                 progress_bonus = progress_made * 0.5
                 
@@ -210,7 +209,7 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
             t_hit = t
             break
         
-        # ENHANCED: Replicator dynamics update with stronger response
+        # Replicator dynamics update with stronger response
         if t < max_epochs - 1:
             new_share = share.copy()
             

@@ -1,8 +1,6 @@
-from flask import Blueprint, request, render_template, jsonify, current_app, g, Response
+from flask import Blueprint, request, jsonify, current_app
 import json
 import os
-import csv
-from io import StringIO
 from simulation import run_simulation, generate_plots, SimulationResult
 
 sim_bp = Blueprint('simulation', __name__)
@@ -52,25 +50,27 @@ def simulate():
         # Generate plots
         plot1, plot2, plot3 = generate_plots(result, P_baseline, P_target, sector_names)
         
-        # Store result in Flask g for template access
-        g.simulation_result = result
-        g.simulation_plots = {
-            'metric_plot': plot1,
-            'shares_plot': plot2,
-            'payoffs_plot': plot3
-        }
-        g.simulation_params = {
-            'P_baseline': P_baseline,
-            'P_target': P_target,
-            'max_epochs': max_epochs,
-            'actual_epochs': len(result.P_series)
-        }
-        g.sector_names = sector_names
-        
         if current_app.config.get("DEBUG"):
             print(f"Simulation completed: t_hit={result.t_hit}, final_P={result.P_series[-1]:.3f}")
         
-        return render_template('simulation_results.html')
+        # Return JSON response
+        return jsonify({
+            "success": True,
+            "t_hit": result.t_hit,
+            "final_value": result.P_series[-1],
+            "total_epochs": len(result.P_series),
+            "plot_files": {
+                'metric_plot': plot1,
+                'shares_plot': plot2,
+                'payoffs_plot': plot3
+            },
+            "simulation_params": {
+                'P_baseline': P_baseline,
+                'P_target': P_target,
+                'max_epochs': max_epochs,
+                'actual_epochs': len(result.P_series)
+            }
+        })
         
     except ValueError as e:
         if current_app.config.get("DEBUG"):
@@ -83,82 +83,7 @@ def simulate():
             traceback.print_exc()
         return jsonify({"error": f"Simulation failed: {str(e)}"}), 500
 
-@sim_bp.route('/download_csv/<data_type>')
-def download_csv(data_type):
-    """Download simulation data as CSV."""
-    try:
-        if not hasattr(g, 'simulation_result') or not g.simulation_result:
-            return "No simulation data available", 404
-        
-        result = g.simulation_result
-        
-        if data_type == 'shares':
-            # Generate shares CSV
-            output = StringIO()
-            writer = csv.writer(output)
-            
-            # Header
-            header = ['Actor', 'Strategy', 'Epoch', 'Share']
-            writer.writerow(header)
-            
-            # Data
-            if hasattr(g, 'sector_names') and g.sector_names:
-                for g_idx, actor in enumerate(g.sector_names):
-                    if g_idx < len(result.share):
-                        for k in range(len(result.share[g_idx])):
-                            for t in range(len(result.share[g_idx][k])):
-                                writer.writerow([
-                                    actor,
-                                    f'Strategy_{k+1}',
-                                    t,
-                                    result.share[g_idx][k][t]
-                                ])
-            
-            output.seek(0)
-            return Response(
-                output.getvalue(),
-                mimetype='text/csv',
-                headers={'Content-Disposition': 'attachment; filename=simulation_shares.csv'}
-            )
-            
-        elif data_type == 'payoffs':
-            # Generate payoffs CSV
-            output = StringIO()
-            writer = csv.writer(output)
-            
-            # Header
-            header = ['Actor', 'Strategy', 'Epoch', 'Payoff']
-            writer.writerow(header)
-            
-            # Data
-            if hasattr(g, 'sector_names') and g.sector_names:
-                for g_idx, actor in enumerate(g.sector_names):
-                    if g_idx < len(result.payoff):
-                        for k in range(len(result.payoff[g_idx])):
-                            for t in range(len(result.payoff[g_idx][k])):
-                                writer.writerow([
-                                    actor,
-                                    f'Strategy_{k+1}',
-                                    t,
-                                    result.payoff[g_idx][k][t]
-                                ])
-            
-            output.seek(0)
-            return Response(
-                output.getvalue(),
-                mimetype='text/csv',
-                headers={'Content-Disposition': 'attachment; filename=simulation_payoffs.csv'}
-            )
-        
-        else:
-            return "Invalid data type", 400
-            
-    except Exception as e:
-        if current_app.config.get("DEBUG"):
-            print(f"Error generating CSV: {e}")
-        return f"Error generating CSV: {str(e)}", 500
-
-# Add this debug route to test if the blueprint is working
+# Test route to verify blueprint is working
 @sim_bp.route('/test_simulation')
 def test_simulation():
     """Test route to verify blueprint is working"""

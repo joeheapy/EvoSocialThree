@@ -46,7 +46,9 @@ results = {
     'payoffs_table': None,
     'payoffs_table_error': False,
     'payoffs_analysis': None,
-    'payoffs_analysis_error': False
+    'payoffs_analysis_error': False,
+    'simulation_results': None,  # NEW: Store simulation results
+    'simulation_error': False    # NEW: Store simulation error state
 }
 
 @app.route('/', methods=['GET'])
@@ -99,6 +101,8 @@ def reset_app():
     results['payoffs_table_error'] = False
     results['payoffs_analysis'] = None
     results['payoffs_analysis_error'] = False
+    results['simulation_results'] = None  # NEW
+    results['simulation_error'] = False   # NEW
     
     print("Application reset to initial state")
     print("--------------------------------\n")
@@ -406,6 +410,25 @@ def get_simulation_data():
         })
         
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/store_simulation_results', methods=['POST'])
+def store_simulation_results():
+    """Store simulation results in the results dictionary"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        # Store the simulation results
+        results['simulation_results'] = data
+        results['simulation_error'] = False
+        
+        return jsonify({"success": True})
+        
+    except Exception as e:
+        print(f"Error storing simulation results: {e}")
+        results['simulation_error'] = True
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
