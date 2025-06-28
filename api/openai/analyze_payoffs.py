@@ -113,11 +113,12 @@ def format_payoffs_for_analysis(actors: List[ActorEntry]) -> str:
     
     for actor in actors:
         actor_data = f"\n**{actor.sector} ({actor.actor_id})**"
+        actor_data += f"\nActor Weight: {actor.weight:.3f}"  # Show actor weight once
         for strategy in actor.strategies:
             payoff = getattr(strategy, 'payoff_epoch_0', 0.0)
             actor_data += f"\n  - {strategy.id} ({strategy.commitment_level}): "
             actor_data += f"Δ={strategy.delta:.3f}, Cost={strategy.private_cost:.3f}, "
-            actor_data += f"Weight={strategy.weight:.3f}, Payoff={payoff:.6f}"
+            actor_data += f"Payoff={payoff:.6f}"  # Remove strategy.weight reference
             actor_data += f"\n    Description: {strategy.description}"
         formatted_data.append(actor_data)
     

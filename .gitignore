@@ -46,3 +46,10 @@ instance/
 # Logs
 logs/
 *.log
+
+# Generated plots
+static/plots/
+*.png
+*.jpg
+*.jpeg
+*.svg

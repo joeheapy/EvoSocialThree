@@ -186,7 +186,7 @@
             <td>${strat.commitment_level}</td>
             <td>${strat.delta >= 0 ? '+' : ''}${strat.delta.toFixed(3)}</td>
             <td>${strat.private_cost.toFixed(3)}</td>
-            <td>${strat.weight.toFixed(3)}</td>
+            <td>${actor.weight.toFixed(3)}</td>
             <td>${
               strat.payoff_epoch_0 !== null
                 ? strat.payoff_epoch_0.toFixed(6)
@@ -354,7 +354,7 @@
         <td>{{ strat.commitment_level }}</td>
         <td>{{ '%+.3f'|format(strat.delta) }}</td>
         <td>{{ '%.3f'|format(strat.private_cost) }}</td>
-        <td>{{ '%.3f'|format(strat.weight) }}</td>
+        <td>{{ '%.3f'|format(actor.weight) }}</td>
         <td>
           {{ '%.6f'|format(strat.payoff_epoch_0) if strat.payoff_epoch_0 is not
           none else 'N/A' }}

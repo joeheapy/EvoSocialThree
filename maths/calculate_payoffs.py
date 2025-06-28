@@ -22,16 +22,15 @@ def convert_to_dataframes(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.Da
     strategies_data = []
     
     for g, actor in enumerate(actors):
-        # For actors_df, we'll use the first strategy's weight as a representative value
-        # But the real weight will be used per-strategy in the calculation
+        # Use actor.weight instead of actor.strategies[0].weight
         actors_data.append({
             "g": g,
             "actor_id": actor.actor_id,
             "sector": actor.sector,
-            "weight": actor.strategies[0].weight if actor.strategies else 0.0
+            "weight": actor.weight  # Changed from actor.strategies[0].weight
         })
         
-        # Add strategies to strategies DataFrame WITH INDIVIDUAL WEIGHTS
+        # Add strategies to strategies DataFrame WITH ACTOR'S WEIGHT (not individual strategy weights)
         commitment_to_k = {"High": 0, "Medium": 1, "Low": 2}
         
         for strategy in actor.strategies:
@@ -43,7 +42,7 @@ def convert_to_dataframes(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.Da
                 "commitment": strategy.commitment_level,
                 "delta": strategy.delta,
                 "cost": strategy.private_cost,
-                "weight": strategy.weight,  # Use INDIVIDUAL strategy weight
+                "weight": actor.weight,  # Use ACTOR's weight, not strategy.weight
                 "description": strategy.description
             })
     
@@ -56,11 +55,11 @@ def convert_to_dataframes(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.Da
 
 def calculate_payoffs_epoch_0(actors_df: pd.DataFrame, strategies_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Calculate payoffs for epoch 0 using individual strategy weights.
+    Calculate payoffs for epoch 0 using actor-level weights.
     
     for each actor g in 1 … G:
         for each strategy k in 1 … K:
-            social_gain  =  weight[g][k]  *  (- delta[g][k])  # Note: weight per strategy now
+            social_gain  =  weight[g]  *  (- delta[g][k])  # Note: weight per actor now
             raw_payoff   =  social_gain  -  cost[g][k]
             payoff[g][k][0] =  max(raw_payoff + EPSILON, EPSILON)
     
@@ -79,14 +78,13 @@ def calculate_payoffs_epoch_0(actors_df: pd.DataFrame, strategies_df: pd.DataFra
     # Create a copy to avoid modifying the original
     result_df = strategies_df.copy()
     
-    # No need to merge weights - they're already in strategies_df
-    # DEBUG: Print the dataframe with individual weights
-    print("DEBUG: Strategies DataFrame with individual weights:")
+    # DEBUG: Print the dataframe with actor-level weights
+    print("DEBUG: Strategies DataFrame with actor-level weights:")
     print(result_df.head(10))
     print()
     
-    # Apply the algorithm using individual strategy weights
-    # social_gain = weight[g][k] * (- delta[g][k])  # Note: weight per strategy now
+    # Apply the algorithm using actor-level weights
+    # social_gain = weight[g] * (- delta[g][k])  # Note: weight per actor now
     result_df['social_gain'] = result_df['weight'] * (-result_df['delta'])
     
     # DEBUG: Print social gain calculations
@@ -126,9 +124,9 @@ def add_payoffs_to_actors(actors: List[ActorEntry], strategies_df: pd.DataFrame)
     # DEBUG: Print what OpenAI originally returned
     print("DEBUG: Original data from OpenAI:")
     for g, actor in enumerate(actors):
-        print(f"  Actor {g} ({actor.actor_id}):")
+        print(f"  Actor {g} ({actor.actor_id}): weight={actor.weight:.3f}")
         for strategy in actor.strategies:
-            print(f"    {strategy.id}: delta={strategy.delta:.3f}, cost={strategy.private_cost:.3f}, weight={strategy.weight:.3f}")
+            print(f"    {strategy.id}: delta={strategy.delta:.3f}, cost={strategy.private_cost:.3f}")
     print()
     
     # Create a copy of actors to avoid modifying the original
@@ -187,33 +185,3 @@ def process_payoffs_data(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.Dat
     
     return actors_df, strategies_df_with_payoffs, updated_actors
 
-
-# Example usage and testing
-if __name__ == "__main__":
-    # Test with sample data
-    from api.openai.infer_payoffs import ActorEntry, Strategy
-    
-    # Create sample data for testing
-    sample_actors = [
-        ActorEntry(
-            sector="Central Government",
-            role_in_alleviating_child_poverty="Policy and funding",
-            actor_index="0",
-            actor_id="CG",
-            strategies=[
-                Strategy(id="CG-1", description="High investment", commitment_level="High", 
-                        delta=-0.060, private_cost=0.040, weight=0.80),
-                Strategy(id="CG-2", description="Medium investment", commitment_level="Medium", 
-                        delta=-0.030, private_cost=0.020, weight=0.80),
-                Strategy(id="CG-3", description="Low investment", commitment_level="Low", 
-                        delta=0.010, private_cost=0.005, weight=0.80)
-            ]
-        )
-    ]
-    
-    actors_df, strategies_df, updated_actors = process_payoffs_data(sample_actors)
-    print("Actors DataFrame:")
-    print(actors_df)
-    print("\nStrategies DataFrame with Payoffs:")
-    print(strategies_df)
-    print(f"\nSample payoff calculation: {updated_actors[0].strategies[0].payoff_epoch_0:.6f}")

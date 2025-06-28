@@ -114,6 +114,152 @@
         {% endif %}
       </section>
       {% endif %}
+
+      <!-- Step 6: Simulation - Only show if payoffs analysis is complete -->
+      {% if results.payoffs_analysis %}
+      <section id="step-6-simulation" class="content-section">
+        <div class="step-heading">
+          <span class="step-label-dark">Step 6</span>
+          <h2>Run evolutionary dynamics simulation</h2>
+        </div>
+        <div>
+          <p class="step-description">
+            Simulate how the system evolves over time using evolutionary game
+            theory. Actors will gradually shift towards higher-payoff
+            strategies, and we'll track how this affects the target metric. The
+            simulation will run until the target is reached or maximum epochs
+            are hit.
+            <span class="time-label">2-5 seconds</span>
+          </p>
+        </div>
+
+        <!-- Simulation trigger or results -->
+        {% if not results.simulation_results and not results.simulation_error %}
+        <div class="action-section">
+          <button
+            type="button"
+            onclick="runSimulation()"
+            class="analysis-button"
+            id="simulationBtn"
+          >
+            Run Simulation With Nudges
+          </button>
+          <div
+            id="simulationStatus"
+            class="status-message"
+            style="display: none; margin-top: 15px"
+          ></div>
+        </div>
+        {% else %}
+        <!-- Show simulation results -->
+        {% include 'components/simulation_results.html' %} {% endif %}
+      </section>
+      {% endif %}
     </main>
+
+    <!-- Updated JavaScript for inline simulation results -->
+    <script>
+      async function runSimulation() {
+        const btn = document.getElementById('simulationBtn')
+        const status = document.getElementById('simulationStatus')
+
+        // Disable button and show loading
+        btn.disabled = true
+        btn.innerHTML = '⏳ Running simulation...'
+        status.style.display = 'block'
+        status.innerHTML = 'Preparing simulation data...'
+
+        try {
+          console.log('Fetching simulation data...')
+
+          // Fetch simulation data from API
+          const dataResponse = await fetch('/get_simulation_data')
+          if (!dataResponse.ok) {
+            throw new Error(
+              `Failed to get simulation data: ${dataResponse.status}`
+            )
+          }
+
+          const data = await dataResponse.json()
+
+          if (!data.success) {
+            throw new Error(data.error || 'Failed to prepare simulation data')
+          }
+
+          console.log(
+            'Simulation data prepared:',
+            data.rows.length,
+            'strategies'
+          )
+
+          if (data.rows.length === 0) {
+            throw new Error('No strategy data found')
+          }
+
+          status.innerHTML = 'Running evolutionary dynamics...'
+
+          // Run simulation
+          const simResponse = await fetch('/simulate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              rows: data.rows,
+              P_baseline: data.P_baseline,
+              P_target: data.P_target,
+              max_epochs: 100,
+            }),
+          })
+
+          if (!simResponse.ok) {
+            const errorText = await simResponse.text()
+            throw new Error(
+              `Simulation failed: ${simResponse.status} - ${errorText}`
+            )
+          }
+
+          const simResults = await simResponse.json()
+
+          if (!simResults.success) {
+            throw new Error(simResults.error || 'Simulation failed')
+          }
+
+          console.log('Simulation completed successfully')
+          status.innerHTML = 'Storing results...'
+
+          // Store results on server
+          const storeResponse = await fetch('/store_simulation_results', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(simResults),
+          })
+
+          if (!storeResponse.ok) {
+            throw new Error('Failed to store simulation results')
+          }
+
+          // Reload page to show results
+          window.location.href = window.location.pathname + '#step-6-simulation'
+          window.location.reload()
+        } catch (error) {
+          console.error('Simulation error:', error)
+
+          // Reset button state
+          btn.disabled = false
+          btn.innerHTML = '🎯 Run Evolutionary Simulation'
+          status.innerHTML = '❌ ' + error.message
+          status.style.color = '#dc3545'
+
+          // Hide error after 10 seconds
+          setTimeout(() => {
+            status.style.display = 'none'
+            status.style.color = ''
+          }, 10000)
+        }
+      }
+    </script>
   </body>
 </html>

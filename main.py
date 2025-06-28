@@ -1,5 +1,5 @@
 import webbrowser
-from flask import Flask, render_template, request, redirect, url_for, Response
+from flask import Flask, render_template, request, redirect, url_for, Response, jsonify
 import os
 from dotenv import load_dotenv
 import html
@@ -7,11 +7,13 @@ from config import DEFAULT_PROBLEM_TEXT
 from api.openai.infer_actors import infer_actors_from_problem
 from api.openai.infer_outcome_target import infer_outcome_targets_from_problem
 import json
+from routes_simulation import sim_bp
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
+app.register_blueprint(sim_bp)
 
 # Add custom Jinja2 filter for number formatting
 @app.template_filter('format_number')
@@ -44,7 +46,9 @@ results = {
     'payoffs_table': None,
     'payoffs_table_error': False,
     'payoffs_analysis': None,
-    'payoffs_analysis_error': False
+    'payoffs_analysis_error': False,
+    'simulation_results': None,  # NEW: Store simulation results
+    'simulation_error': False    # NEW: Store simulation error state
 }
 
 @app.route('/', methods=['GET'])
@@ -97,6 +101,8 @@ def reset_app():
     results['payoffs_table_error'] = False
     results['payoffs_analysis'] = None
     results['payoffs_analysis_error'] = False
+    results['simulation_results'] = None  # NEW
+    results['simulation_error'] = False   # NEW
     
     print("Application reset to initial state")
     print("--------------------------------\n")
@@ -358,6 +364,72 @@ def analyze_payoffs():
         results['payoffs_analysis_error'] = True
     
     return redirect(url_for('hello_world') + '#step-5-analyse-payoffs')
+
+@app.route('/get_simulation_data')
+def get_simulation_data():
+    """API endpoint to get simulation data as JSON"""
+    try:
+        if not results.get('payoffs_table'):
+            return jsonify({"error": "No payoffs data available"}), 404
+        
+        payoffs_table = results['payoffs_table']
+        rows = []
+        
+        if hasattr(payoffs_table, 'actors') and payoffs_table.actors:
+            for actor in payoffs_table.actors:
+                if hasattr(actor, 'strategies') and actor.strategies:
+                    for strategy in actor.strategies:
+                        row = [
+                            getattr(actor, 'sector', 'Unknown'),
+                            getattr(strategy, 'strategy_id', 'Strategy'),
+                            getattr(strategy, 'commitment_level', 'Medium'),
+                            float(getattr(strategy, 'delta', 0)),
+                            float(getattr(strategy, 'private_cost', 0)),
+                            float(getattr(strategy, 'weight', 1)),
+                            float(getattr(strategy, 'payoff_epoch_0', 0)) if hasattr(strategy, 'payoff_epoch_0') and strategy.payoff_epoch_0 not in [None, 'N/A'] else 0.0,
+                            float(getattr(strategy, 'behavior_share_epoch_0', 0.333)) if hasattr(strategy, 'behavior_share_epoch_0') and strategy.behavior_share_epoch_0 not in [None, 'N/A'] else 0.333,
+                            getattr(strategy, 'description', 'No description')
+                        ]
+                        rows.append(row)
+        
+        # Get baseline and target values - FIX: Use correct attribute names
+        baseline = 100.0
+        target = 85.0
+        
+        if (results.get('outcome_targets') and 
+            results.get('selected_objective_index') is not None):
+            selected_target = results['outcome_targets'].targets[results['selected_objective_index']]
+            baseline = float(getattr(selected_target, 'from_value', 100))
+            target = float(getattr(selected_target, 'to_value', 85))
+        
+        return jsonify({
+            "rows": rows,
+            "P_baseline": baseline,
+            "P_target": target,
+            "success": True
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/store_simulation_results', methods=['POST'])
+def store_simulation_results():
+    """Store simulation results in the results dictionary"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        # Store the simulation results
+        results['simulation_results'] = data
+        results['simulation_error'] = False
+        
+        return jsonify({"success": True})
+        
+    except Exception as e:
+        print(f"Error storing simulation results: {e}")
+        results['simulation_error'] = True
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     # Open browser in a separate thread

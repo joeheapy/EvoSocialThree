@@ -70,22 +70,23 @@ def infer_actors_from_problem(problem_description: str) -> ActorsTable | None:
         2. Their role in addressing the problem
         3. An index in the format 'g=n' where n is a sequential number starting from 1
         4. A two-character ID derived from the sector name (e.g., 'CG' for 'Central Government')
+        5. A commitment level indicating how strongly they value improvement in the outcome: high, medium, or low.
         5. Three GENERIC evolutionary strategies representing different approaches to the system, following this structure:
 
-           a. Strategy 1: High commitment/investment approach
+        Strategy 1: High commitment/investment approach
               - id: [actorID-1] (e.g., 'CG-1')
-              - description: [general approach representing maximum engagement with the system]
-              - commitment_level: "High"
+              - description: 
+              - commitment_level:
            
            b. Strategy 2: Moderate commitment/investment approach
               - id: [actorID-2] (e.g., 'CG-2')
-              - description: [general approach representing partial engagement with the system]
-              - commitment_level: "Medium"
+              - description: 
+              - commitment_level: 
            
            c. Strategy 3: Minimal commitment/investment approach
               - id: [actorID-3] (e.g., 'CG-3')
-              - description: [general approach representing minimal engagement with the system]
-              - commitment_level: "Low"
+              - description: 
+              - commitment_level: 
 
         IMPORTANT STRATEGY GUIDELINES:
         - Strategies should represent GENERAL APPROACHES rather than specific implementations
@@ -101,11 +102,12 @@ def infer_actors_from_problem(problem_description: str) -> ActorsTable | None:
 
         IMPORTANT: 
         - You MUST identify AT LEAST 6 different actors/sectors
-        - Each actor MUST have exactly three strategies
+        - Each actor must have an id in the format [actorID-1] (e.g., 'CG-1')
+        - Each actor MUST have EXACTLY THREE strategies
         - Each strategy MUST include an id, description, and commitment_level
         - Use UK English spellings. 
 
-        Always include these key sectors IF relevant to the problem: Central Government, Local Authorities, Social Investors, Justice System, Charities/NGOs, Private Sector, Healthcare Providers, Affected Populations.
+        Include these key sectors IF relevant to the problem: Central Government, Local Authorities, Social Investors, Justice System, Charities/NGOs, Private Sector, Healthcare Providers, Affected Populations.
 
         Please format your answer as a JSON object that strictly adheres to the following Pydantic schema: {format_instructions}
         """

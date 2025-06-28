@@ -898,3 +898,118 @@ p {
   font-weight: 500;
   white-space: nowrap;
 }
+
+/* Simulation plots */
+
+.simulation-results-container {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.simulation-summary {
+  margin-bottom: 30px;
+}
+
+.simulation-summary h3 {
+  color: #495057;
+  margin-bottom: 15px;
+  font-size: 1.2em;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.stat-item {
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid #007cba;
+}
+
+.stat-label {
+  display: block;
+  font-weight: 600;
+  color: #6c757d;
+  font-size: 0.9em;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.1em;
+  color: #212529;
+  font-weight: 500;
+}
+
+.simulation-plots h3 {
+  color: #495057;
+  margin-bottom: 20px;
+  font-size: 1.2em;
+}
+
+.plot-container {
+  margin-bottom: 30px;
+  background: white;
+  padding: 20px;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.plot-container h4 {
+  color: #495057;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+}
+
+.simulation-plot {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.plot-description {
+  margin-top: 10px;
+  color: #6c757d;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.simulation-actions h3 {
+  color: #495057;
+  margin-bottom: 15px;
+  font-size: 1.2em;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.9em;
+  transition: background-color 0.2s;
+}
+
+.btn.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+.simulation-results-container.error {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
