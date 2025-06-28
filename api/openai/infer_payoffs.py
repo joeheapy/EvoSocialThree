@@ -17,42 +17,44 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
-# Data models – Strategy now has weight instead of payoff
+# Input models (for parsing existing data)
+class StrategyInput(BaseModel):
+    id: str = Field(description="Strategy ID in the format '[actorID-index]' (e.g., 'CG-1')")
+    description: str = Field(description="Brief description of the strategy")
+    commitment_level: str = Field(description="Level of commitment: 'High', 'Medium', or 'Low'")
+    # Optional fields that might not exist in input
+    delta: float = Field(default=None, description="Estimated change in target metric")
+    private_cost: float = Field(default=None, description="Estimated cost to actor")
+    payoff_epoch_0: float = Field(default=None, description="Calculated payoff")
+    behavior_share_epoch_0: float = Field(default=None, description="Behavior share")
+
+class ActorInputEntry(BaseModel):
+    sector: str
+    role_in_alleviating_child_poverty: str
+    actor_index: str
+    actor_id: str
+    weight: float = Field(default=None, description="Actor weight - will be inferred if not present")
+    strategies: List[StrategyInput]
+
+class PayoffsInputResponse(BaseModel):
+    actors: List[ActorInputEntry] = Field(description="List of input actors")
+
+# Output models (existing Strategy and ActorEntry remain the same)
 class Strategy(BaseModel):
     id: str = Field(description="Strategy ID in the format '[actorID-index]' (e.g., 'CG-1')")
     description: str = Field(description="Brief description of the strategy")
     commitment_level: str = Field(description="Level of commitment: 'High', 'Medium', or 'Low'")
-    # Newly inferred numbers
-    delta: float = Field(
-        description="Estimated change the strategy causes in the target metric "
-                    "(negative number improves the situation, positive makes it worse)."
-    )
-    private_cost: float = Field(
-        description="Estimated financial or political cost to the actor, "
-                    "expressed in arbitrary 'cost units'."
-    )
-    weight: float = Field(
-        description="How strongly the actor values improvement in the outcome target. "
-                    "Value between 0 and 1, where 1 means they deeply care about the outcome "
-                    "and 0 means they are indifferent to it."
-    )
-    # Calculated payoff field (optional, will be set after calculation)
-    payoff_epoch_0: float = Field(
-        default=None,
-        description="Calculated payoff for epoch 0 using the formula: weight * (-delta) - private_cost"
-    )
-    # Behavior share field (optional, will be set by behavior shares API)
-    behavior_share_epoch_0: float = Field(
-        default=None,
-        description="Proportion of actor's behavior allocated to this strategy at epoch 0"
-    )
-
+    delta: float = Field(description="Estimated change in target metric")
+    private_cost: float = Field(description="Estimated cost to actor")
+    payoff_epoch_0: float = Field(default=None, description="Calculated payoff")
+    behavior_share_epoch_0: float = Field(default=None, description="Behavior share")
 
 class ActorEntry(BaseModel):
     sector: str
     role_in_alleviating_child_poverty: str
     actor_index: str
     actor_id: str
+    weight: float = Field(description="How strongly the actor values improvement in the outcome target")
     strategies: List[Strategy]
 
 
@@ -70,10 +72,10 @@ The target is to reduce this specific social problem: {problem_description}.
 
 The specific system objective being optimized is: {system_objective}
 
-You will estimate three numbers for each strategy:
+You will estimate two numbers for each strategy and one weight per actor:
 
 **Task**  
-For each strategy in the JSON below, add these three numeric fields:
+For each strategy in the JSON below, add these two numeric fields:
 
 1. **delta**: How much the strategy changes the target system objective: {system_objective}
    - Negative values = improvement (moves toward the objective)
@@ -92,6 +94,9 @@ For each strategy in the JSON below, add these three numeric fields:
    - Low commitment strategies: 0.005-0.020
    - Use exactly 3 decimal places
 
+**Actor Weight (one per actor)**
+For each actor, add this field at the actor level:
+
 3. **weight**: How strongly this actor genuinely values improvement in the outcome target
    - Research the actor's historical actions, policies, and investments in the UK related to this issue
    - Consider their track record of sustained commitment vs. rhetoric
@@ -103,6 +108,7 @@ For each strategy in the JSON below, add these three numeric fields:
      * 0.0-0.1 = Minimal genuine interest (indifferent or conflicted priorities)
    - Base estimates on observable UK policy actions, not stated intentions
    - Use exactly 3 decimal places
+   - **This weight applies to ALL strategies for this actor**
 
 **Commitment Level Guidelines:**
 - **High commitment strategies**: Should have strong negative deltas (-0.08 to -0.15) but also high costs (0.040-0.080)
@@ -129,11 +135,14 @@ For each actor, consider their UK track record:
 {actors_block}
 
 **Output Requirements**
-- Return the EXACT same JSON structure with the three new numeric fields added to each strategy
+- Return the EXACT same JSON structure with:
+  - Two new numeric fields (delta, private_cost) added to each strategy
+  - One weight field added at the actor level (NOT at strategy level)
 - Keep all existing fields (id, description, commitment_level) unchanged
 - Ensure all weight values are between 0.0 and 1.0
 - Use exactly 3 decimal places for all numbers
 - Follow the commitment level guidelines to create realistic cost-benefit relationships
+- **Important**: The weight field should be at the actor level and apply to all strategies for that actor
 
 Return the result as a JSON object with an "actors" field containing the array of ActorEntry objects with the enhanced strategies.
 
