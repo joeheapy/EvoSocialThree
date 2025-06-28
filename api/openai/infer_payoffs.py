@@ -17,44 +17,42 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
-# Input models (for parsing existing data)
-class StrategyInput(BaseModel):
-    id: str = Field(description="Strategy ID in the format '[actorID-index]' (e.g., 'CG-1')")
-    description: str = Field(description="Brief description of the strategy")
-    commitment_level: str = Field(description="Level of commitment: 'High', 'Medium', or 'Low'")
-    # Optional fields that might not exist in input
-    delta: float = Field(default=None, description="Estimated change in target metric")
-    private_cost: float = Field(default=None, description="Estimated cost to actor")
-    payoff_epoch_0: float = Field(default=None, description="Calculated payoff")
-    behavior_share_epoch_0: float = Field(default=None, description="Behavior share")
-
-class ActorInputEntry(BaseModel):
-    sector: str
-    role_in_alleviating_child_poverty: str
-    actor_index: str
-    actor_id: str
-    weight: float = Field(default=None, description="Actor weight - will be inferred if not present")
-    strategies: List[StrategyInput]
-
-class PayoffsInputResponse(BaseModel):
-    actors: List[ActorInputEntry] = Field(description="List of input actors")
-
-# Output models (existing Strategy and ActorEntry remain the same)
+# Data models – Strategy now has weight instead of payoff
 class Strategy(BaseModel):
     id: str = Field(description="Strategy ID in the format '[actorID-index]' (e.g., 'CG-1')")
     description: str = Field(description="Brief description of the strategy")
     commitment_level: str = Field(description="Level of commitment: 'High', 'Medium', or 'Low'")
-    delta: float = Field(description="Estimated change in target metric")
-    private_cost: float = Field(description="Estimated cost to actor")
-    payoff_epoch_0: float = Field(default=None, description="Calculated payoff")
-    behavior_share_epoch_0: float = Field(default=None, description="Behavior share")
+    # Newly inferred numbers
+    delta: float = Field(
+        description="Estimated change the strategy causes in the target metric "
+                    "(negative number improves the situation, positive makes it worse)."
+    )
+    private_cost: float = Field(
+        description="Estimated financial or political cost to the actor, "
+                    "expressed in arbitrary 'cost units'."
+    )
+    # Calculated payoff field (optional, will be set after calculation)
+    payoff_epoch_0: float = Field(
+        default=None,
+        description="Calculated payoff for epoch 0 using the formula: weight * (-delta) - private_cost"
+    )
+    # Behavior share field (optional, will be set by behavior shares API)
+    behavior_share_epoch_0: float = Field(
+        default=None,
+        description="Proportion of actor's behavior allocated to this strategy at epoch 0"
+    )
+
 
 class ActorEntry(BaseModel):
     sector: str
     role_in_alleviating_child_poverty: str
     actor_index: str
     actor_id: str
-    weight: float = Field(description="How strongly the actor values improvement in the outcome target")
+    weight: float = Field(
+        description="How strongly the actor values improvement in the outcome target. "
+                    "Value between 0 and 1, where 1 means they deeply care about the outcome "
+                    "and 0 means they are indifferent to it."
+    )
     strategies: List[Strategy]
 
 

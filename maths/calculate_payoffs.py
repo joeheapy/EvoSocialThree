@@ -185,33 +185,3 @@ def process_payoffs_data(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.Dat
     
     return actors_df, strategies_df_with_payoffs, updated_actors
 
-
-# Example usage and testing
-if __name__ == "__main__":
-    # Test with sample data
-    from api.openai.infer_payoffs import ActorEntry, Strategy
-    
-    # Create sample data for testing
-    sample_actors = [
-        ActorEntry(
-            sector="Central Government",
-            role_in_alleviating_child_poverty="Policy and funding",
-            actor_index="0",
-            actor_id="CG",
-            strategies=[
-                Strategy(id="CG-1", description="High investment", commitment_level="High", 
-                        delta=-0.060, private_cost=0.040, weight=0.80),
-                Strategy(id="CG-2", description="Medium investment", commitment_level="Medium", 
-                        delta=-0.030, private_cost=0.020, weight=0.80),
-                Strategy(id="CG-3", description="Low investment", commitment_level="Low", 
-                        delta=0.010, private_cost=0.005, weight=0.80)
-            ]
-        )
-    ]
-    
-    actors_df, strategies_df, updated_actors = process_payoffs_data(sample_actors)
-    print("Actors DataFrame:")
-    print(actors_df)
-    print("\nStrategies DataFrame with Payoffs:")
-    print(strategies_df)
-    print(f"\nSample payoff calculation: {updated_actors[0].strategies[0].payoff_epoch_0:.6f}")
