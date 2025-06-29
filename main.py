@@ -47,8 +47,8 @@ results = {
     'payoffs_table_error': False,
     'payoffs_analysis': None,
     'payoffs_analysis_error': False,
-    'simulation_results': None,  # NEW: Store simulation results
-    'simulation_error': False    # NEW: Store simulation error state
+    # 'simulation_results': None,
+    # 'simulation_error': False
 }
 
 @app.route('/', methods=['GET'])

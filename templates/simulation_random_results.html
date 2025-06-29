@@ -1,0 +1,205 @@
+{% if g.random_result %}
+<div class="simulation-results-container">
+  <div class="simulation-summary">
+    <h3>Random Incentive Search Results</h3>
+    <div class="summary-stats">
+      <div class="stat-item">
+        <span class="stat-label">Search Outcome:</span>
+        <span class="stat-value">
+          {% if g.random_result.t_hit is not none %} ✅ Solution found at epoch
+          {{ g.random_result.t_hit }} {% else %} ❌ No solution found in {{
+          g.simulation_params.trials }} trials {% endif %}
+        </span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Budget:</span>
+        <span class="stat-value budget-highlight"
+          >{{ "%.6f"|format(g.total_budget) }}</span
+        >
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Baseline Value:</span>
+        <span class="stat-value"
+          >{{ "%.3f"|format(g.simulation_params.P_baseline) }}</span
+        >
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Final Value:</span>
+        <span class="stat-value"
+          >{{ "%.3f"|format(g.random_result.P_series[-1]) }}</span
+        >
+      </div>
+      <div class="stat-item target-highlight">
+        <span class="stat-label">Target Value:</span>
+        <span class="stat-value"
+          >{{ "%.3f"|format(g.simulation_params.P_target) }}</span
+        >
+      </div>
+    </div>
+  </div>
+
+  {% if g.incentive_matrix is not none %}
+  <div class="incentive-matrix">
+    <h3>Incentive Matrix (π)</h3>
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th>Actor</th>
+          <th>Strategy 1</th>
+          <th>Strategy 2</th>
+          <th>Strategy 3</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g_idx in range(g.sector_names|length) %}
+        <tr>
+          <td class="actor-name">
+            {{ g.sector_names[g_idx][:15] }}{% if g.sector_names[g_idx]|length >
+            15 %}...{% endif %}
+          </td>
+          {% for k_idx in range(g.incentive_matrix.shape[1]) %} {% set
+          incentive_value = g.incentive_matrix[g_idx][k_idx] %}
+          <td
+            class="matrix-cell {% if incentive_value > 0 %}subsidy-cell{% elif incentive_value < 0 %}penalty-cell{% endif %}"
+            data-value="{{ incentive_value }}"
+          >
+            {{ "%.4f"|format(incentive_value) }}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="matrix-legend">
+      <span class="subsidy-legend">Green = Subsidy (positive values)</span>
+      <span class="penalty-legend">Red = Penalty (negative values)</span>
+    </p>
+  </div>
+  {% endif %}
+
+  <div class="simulation-plots">
+    <h3>Simulation Visualizations</h3>
+
+    <div class="plot-container">
+      <h4>Headline Metric Over Time</h4>
+      <img
+        src="{{ url_for('static', filename='plots/' + g.plot_files.metric_plot) }}"
+        alt="Metric progression over time"
+        class="simulation-plot"
+      />
+      <p class="plot-description">
+        Shows how the target metric evolves with optimal incentives applied.
+      </p>
+    </div>
+
+    <div class="plot-container">
+      <h4>Strategy Shares by Actor</h4>
+      <img
+        src="{{ url_for('static', filename='plots/' + g.plot_files.shares_plot) }}"
+        alt="Strategy shares over time"
+        class="simulation-plot"
+      />
+      <p class="plot-description">
+        Shows how actors allocate behavior across strategies with incentives.
+      </p>
+    </div>
+
+    <div class="plot-container">
+      <h4>Strategy Payoffs by Actor</h4>
+      <img
+        src="{{ url_for('static', filename='plots/' + g.plot_files.payoffs_plot) }}"
+        alt="Strategy payoffs over time"
+        class="simulation-plot"
+      />
+      <p class="plot-description">
+        Heatmap showing payoff values including incentive effects.
+      </p>
+    </div>
+  </div>
+</div>
+
+<style>
+  .matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Lexend', sans-serif;
+    margin-bottom: 10px;
+    border: 1px solid var(--jrf-mid-gray);
+    font-size: 14px;
+  }
+
+  .matrix-table th {
+    background-color: #f8f8f8;
+    color: var(--jrf-purple);
+    font-weight: 500;
+    padding: 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--jrf-mid-gray);
+  }
+
+  .matrix-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--jrf-mid-gray);
+    text-align: center;
+    color: var(--jrf-text);
+  }
+
+  .matrix-cell {
+    font-weight: 500;
+    font-family: monospace;
+  }
+
+  .subsidy-cell {
+    background-color: rgba(0, 255, 0, 0.2);
+  }
+
+  .penalty-cell {
+    background-color: rgba(255, 0, 0, 0.2);
+  }
+
+  .actor-name {
+    text-align: left !important;
+    font-weight: 600;
+  }
+
+  .matrix-legend {
+    font-size: 14px;
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .subsidy-legend {
+    background-color: rgba(0, 255, 0, 0.3);
+    padding: 2px 8px;
+    margin: 0 10px;
+    border-radius: 4px;
+  }
+
+  .penalty-legend {
+    background-color: rgba(255, 0, 0, 0.3);
+    padding: 2px 8px;
+    margin: 0 10px;
+    border-radius: 4px;
+  }
+
+  .budget-highlight {
+    font-weight: 700;
+    color: var(--jrf-blue);
+  }
+</style>
+
+{% else %}
+<div class="simulation-results-container error">
+  <p>
+    ❌ Random search failed to find a solution. Try adjusting parameters or
+    increasing trials.
+  </p>
+  {% if g.simulation_params %}
+  <p>
+    Searched {{ g.simulation_params.trials }} trials attempting to move from {{
+    "%.3f"|format(g.simulation_params.P_baseline) }} to {{
+    "%.3f"|format(g.simulation_params.P_target) }}.
+  </p>
+  {% endif %}
+</div>
+{% endif %}

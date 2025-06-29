@@ -120,16 +120,15 @@
       <section id="step-6-simulation" class="content-section">
         <div class="step-heading">
           <span class="step-label-dark">Step 6</span>
-          <h2>Run evolutionary dynamics simulation</h2>
+          <h2>Find optimal incentives using random search</h2>
         </div>
         <div>
           <p class="step-description">
-            Simulate how the system evolves over time using evolutionary game
-            theory. Actors will gradually shift towards higher-payoff
-            strategies, and we'll track how this affects the target metric. The
-            simulation will run until the target is reached or maximum epochs
-            are hit.
-            <span class="time-label">2-5 seconds</span>
+            Use random search to find the optimal incentive structure that
+            nudges the system toward the target. The algorithm will test
+            thousands of different subsidy and penalty combinations to find the
+            most cost-effective way to achieve the desired outcome.
+            <span class="time-label">30-60 seconds</span>
           </p>
         </div>
 
@@ -142,7 +141,7 @@
             class="analysis-button"
             id="simulationBtn"
           >
-            Run Simulation With Nudges
+            🎯 Run Random Incentive Search
           </button>
           <div
             id="simulationStatus"
@@ -152,12 +151,12 @@
         </div>
         {% else %}
         <!-- Show simulation results -->
-        {% include 'components/simulation_results.html' %} {% endif %}
+        {% include 'simulation_random_results.html' %} {% endif %}
       </section>
       {% endif %}
     </main>
 
-    <!-- Updated JavaScript for inline simulation results -->
+    <!-- Updated JavaScript for random incentive search -->
     <script>
       async function runSimulation() {
         const btn = document.getElementById('simulationBtn')
@@ -165,7 +164,7 @@
 
         // Disable button and show loading
         btn.disabled = true
-        btn.innerHTML = '⏳ Running simulation...'
+        btn.innerHTML = '⏳ Running random search...'
         status.style.display = 'block'
         status.innerHTML = 'Preparing simulation data...'
 
@@ -196,60 +195,59 @@
             throw new Error('No strategy data found')
           }
 
-          status.innerHTML = 'Running evolutionary dynamics...'
+          status.innerHTML = 'Running random incentive search...'
 
-          // Run simulation
-          const simResponse = await fetch('/simulate', {
+          // Run RANDOM simulation
+          const simResponse = await fetch('/simulate/random', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              rows: data.rows,
-              P_baseline: data.P_baseline,
-              P_target: data.P_target,
-              max_epochs: 100,
+              rows: extractedRows,
+              P_baseline: parseFloat(
+                document.getElementById('P_baseline').value
+              ),
+              P_target: parseFloat(document.getElementById('P_target').value),
+              max_epochs: 100, // Number of epochs for the simulation
+              trials: 10000, // Number of trials for random search
+              subsidy_cap: 0.15, // Value for subsidy cap
+              penalty_cap: 0.1, // Value for penalty cap
             }),
           })
 
           if (!simResponse.ok) {
             const errorText = await simResponse.text()
             throw new Error(
-              `Simulation failed: ${simResponse.status} - ${errorText}`
+              `Random search failed: ${simResponse.status} - ${errorText}`
             )
           }
 
-          const simResults = await simResponse.json()
+          // For random simulation, we get HTML response, not JSON
+          const htmlResponse = await simResponse.text()
 
-          if (!simResults.success) {
-            throw new Error(simResults.error || 'Simulation failed')
+          // Replace the simulation section with the results
+          const simulationSection = document.getElementById('step-6-simulation')
+          const parser = new DOMParser()
+          const doc = parser.parseFromString(htmlResponse, 'text/html')
+          const resultsDiv = doc.querySelector(
+            '.simulation-results-container, .simulation-results-container.error'
+          )
+
+          if (resultsDiv) {
+            // Find the action section and replace it
+            const actionSection =
+              simulationSection.querySelector('.action-section')
+            if (actionSection) {
+              actionSection.innerHTML = resultsDiv.outerHTML
+            }
           }
 
-          console.log('Simulation completed successfully')
-          status.innerHTML = 'Storing results...'
-
-          // Store results on server
-          const storeResponse = await fetch('/store_simulation_results', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(simResults),
-          })
-
-          if (!storeResponse.ok) {
-            throw new Error('Failed to store simulation results')
-          }
-
-          // Reload page to show results
-          window.location.href = window.location.pathname + '#step-6-simulation'
-          window.location.reload()
+          console.log('Random search completed successfully')
         } catch (error) {
-          console.error('Simulation error:', error)
+          console.error('Random search error:', error)
 
           // Reset button state
           btn.disabled = false
-          btn.innerHTML = '🎯 Run Evolutionary Simulation'
+          btn.innerHTML = '🎯 Run Random Incentive Search'
           status.innerHTML = '❌ ' + error.message
           status.style.color = '#dc3545'
 

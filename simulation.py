@@ -101,7 +101,100 @@ def parse_rows_to_arrays(rows: List[List]) -> Tuple[np.ndarray, np.ndarray, np.n
     
     return delta_raw, private_cost, weight, payoff_base, initial_shares, sector_names, strategy_ids
 
-def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epochs: int, scale: Optional[float] = None) -> SimulationResult:
+def compute_payoff(delta_raw: np.ndarray, share: np.ndarray, private_cost: np.ndarray, payoff_base: np.ndarray, P_baseline: float, P_target: float, progress_made: float, target_direction: bool) -> np.ndarray:
+    """Calculate dynamic payoffs for all actors and strategies."""
+    G, K = delta_raw.shape
+    payoff = np.zeros((G, K))
+    
+    for g in range(G):
+        for k in range(K):
+            # Start with the pre-computed base payoff from infer_payoffs
+            base_payoff = payoff_base[g, k]
+            
+            # Dynamic payoff components
+            # 1. System progress bonus (rewards collective progress)
+            progress_bonus = progress_made * 0.5
+            
+            # 2. Strategy effectiveness bonus (rewards strategies that help reach target)
+            strategy_effectiveness = 0.0
+            if target_direction and delta_raw[g, k] < 0:  # Strategy helps move toward lower target
+                strategy_effectiveness = abs(delta_raw[g, k]) * share[g, k] * 2.0
+            elif not target_direction and delta_raw[g, k] > 0:  # Strategy helps move toward higher target
+                strategy_effectiveness = delta_raw[g, k] * share[g, k] * 2.0
+            
+            # 3. Coordination bonus (slight bonus for strategies being used by others)
+            coordination_bonus = np.mean(share[:, k]) * 0.1
+            
+            # Final payoff calculation
+            payoff[g, k] = base_payoff + progress_bonus + strategy_effectiveness + coordination_bonus
+            
+            # Ensure minimum positive payoff for stability
+            payoff[g, k] = max(payoff[g, k], EPSILON)
+    
+    return payoff
+
+def compute_payoff_improved(delta_raw: np.ndarray, share: np.ndarray, private_cost: np.ndarray, 
+                           payoff_base: np.ndarray, P_baseline: float, P_target: float, 
+                           progress_made: float, target_direction: bool) -> np.ndarray:
+    """Enhanced payoff calculation with stronger incentives."""
+    G, K = delta_raw.shape
+    payoff = np.zeros((G, K))
+    
+    # Calculate distance to target for stronger incentives
+    distance_remaining = abs(P_target - (P_baseline + np.sum(delta_raw * share)))
+    urgency_factor = min(2.0, 1.0 + distance_remaining / abs(P_target - P_baseline))
+    
+    for g in range(G):
+        for k in range(K):
+            base_payoff = payoff_base[g, k]
+            
+            # 1. Enhanced progress bonus
+            progress_bonus = progress_made * 1.0 * urgency_factor
+            
+            # 2. Stronger strategy effectiveness bonus
+            strategy_effectiveness = 0.0
+            if target_direction and delta_raw[g, k] < 0:
+                # Exponential bonus for very effective strategies
+                effectiveness = abs(delta_raw[g, k]) * share[g, k]
+                strategy_effectiveness = effectiveness * 3.0 * urgency_factor
+            elif not target_direction and delta_raw[g, k] > 0:
+                effectiveness = delta_raw[g, k] * share[g, k]
+                strategy_effectiveness = effectiveness * 3.0 * urgency_factor
+            
+            # 3. Anti-coordination penalty for harmful strategies
+            anti_coordination = 0.0
+            if (target_direction and delta_raw[g, k] > 0) or (not target_direction and delta_raw[g, k] < 0):
+                anti_coordination = -np.mean(share[:, k]) * 0.5 * urgency_factor
+            
+            # 4. Cost-adjusted payoff (incentives already applied to private_cost)
+            cost_penalty = -private_cost[g, k] * 0.5
+            
+            payoff[g, k] = base_payoff + progress_bonus + strategy_effectiveness + anti_coordination + cost_penalty
+            payoff[g, k] = max(payoff[g, k], EPSILON)
+    
+    return payoff
+
+# The value 0.01 is used as a tolerance for checking convergence
+# This can be adjusted based on the precision required for the target metric.
+def check_success_condition(P_t: float, P_target: float, tolerance: float = 0.01) -> bool:
+    """Check if current value is close enough to target."""
+    return abs(P_t - P_target) <= tolerance * abs(P_target)
+
+def evaluate_solution(result: SimulationResult, P_target: float) -> Tuple[bool, float, float]:
+    """Evaluate solution quality."""
+    final_value = result.P_series[-1]
+    distance = abs(final_value - P_target)
+    
+    # Success if within 1% of target
+    success = distance <= 0.01 * abs(P_target)
+    
+    # Score combines distance and convergence speed
+    speed_bonus = 1.0 / (result.t_hit + 1) if result.t_hit is not None else 0
+    score = 1.0 / (distance + 0.001) + speed_bonus
+    
+    return success, score, distance
+
+def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epochs: int, scale: Optional[float] = None, cost_override: Optional[np.ndarray] = None) -> SimulationResult:
     """Run evolutionary game theory simulation."""
     
     if not rows:
@@ -109,6 +202,10 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
     
     # Parse input data - includes base payoffs
     delta_raw, private_cost, weight, payoff_base, initial_shares, sector_names, strategy_ids = parse_rows_to_arrays(rows)
+    
+    # Use cost override if provided
+    if cost_override is not None:
+        private_cost = cost_override.copy()
     
     G, K = delta_raw.shape
     
@@ -138,7 +235,17 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
     progress_needed = abs(P_target - P_baseline)
     
     # Higher learning rate for more dynamic behavior
-    learning_rate = 0.3
+    def calculate_adaptive_learning_rate(progress_made: float, distance_to_target: float) -> float:
+        """Higher learning rates when close to target or making slow progress."""
+        base_rate = 0.3
+        
+        # Increase rate when very close to target
+        proximity_boost = min(1.0, 2.0 * (1.0 - distance_to_target / abs(P_target - P_baseline)))
+        
+        # Increase rate when progress is slow
+        progress_boost = 1.0 if progress_made < 0.1 else 0.5
+        
+        return min(0.8, base_rate * (1.0 + proximity_boost + progress_boost))
     
     # Initialize progress_made to avoid UnboundLocalError
     progress_made = 0.0
@@ -164,33 +271,8 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
         if t % 10 == 0:
             print(f"DEBUG SIMULATION: Epoch {t}, P_t={P_t:.6f}, Progress={(progress_made*100):.1f}%")
         
-        # Calculate dynamic payoffs with enhanced bonuses
-        payoff = np.zeros((G, K))
-        
-        for g in range(G):
-            for k in range(K):
-                # Start with the pre-computed base payoff from infer_payoffs
-                base_payoff = payoff_base[g, k]
-                
-                # Dynamic payoff components
-                # 1. System progress bonus (rewards collective progress)
-                progress_bonus = progress_made * 0.5
-                
-                # 2. Strategy effectiveness bonus (rewards strategies that help reach target)
-                strategy_effectiveness = 0.0
-                if target_direction and delta_raw[g, k] < 0:  # Strategy helps move toward lower target
-                    strategy_effectiveness = abs(delta_raw[g, k]) * share[g, k] * 2.0
-                elif not target_direction and delta_raw[g, k] > 0:  # Strategy helps move toward higher target
-                    strategy_effectiveness = delta_raw[g, k] * share[g, k] * 2.0
-                
-                # 3. Coordination bonus (slight bonus for strategies being used by others)
-                coordination_bonus = np.mean(share[:, k]) * 0.1
-                
-                # Final payoff calculation
-                payoff[g, k] = base_payoff + progress_bonus + strategy_effectiveness + coordination_bonus
-                
-                # Ensure minimum positive payoff for stability
-                payoff[g, k] = max(payoff[g, k], EPSILON)
+        # Calculate dynamic payoffs using helper function
+        payoff = compute_payoff(delta_raw, share, private_cost, payoff_base, P_baseline, P_target, progress_made, target_direction)
         
         # Additional debug info after payoff calculation
         if t % 10 == 0:
@@ -201,11 +283,8 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
         share_history[:, :, t] = share
         payoff_history[:, :, t] = payoff
         
-        # Check stopping condition
-        if target_direction and P_t <= P_target:
-            t_hit = t
-            break
-        elif not target_direction and P_t >= P_target:
+        # Check stopping condition using the new function
+        if check_success_condition(P_t, P_target):
             t_hit = t
             break
         
@@ -223,7 +302,7 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
                         fitness_diff = payoff[g, k] - avg_payoff_g
                         # Amplify fitness differences for more dynamic behavior
                         amplified_diff = fitness_diff * 1.5
-                        new_share[g, k] = share[g, k] + learning_rate * share[g, k] * amplified_diff
+                        new_share[g, k] = share[g, k] + calculate_adaptive_learning_rate(progress_made, abs(P_target - P_baseline)) * share[g, k] * amplified_diff
                         
                         # Ensure non-negative with higher minimum
                         new_share[g, k] = max(new_share[g, k], EPSILON * 10)
