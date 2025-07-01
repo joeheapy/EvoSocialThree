@@ -412,24 +412,6 @@ def get_simulation_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/store_simulation_results', methods=['POST'])
-def store_simulation_results():
-    """Store simulation results in the results dictionary"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-        
-        # Store the simulation results
-        results['simulation_results'] = data
-        results['simulation_error'] = False
-        
-        return jsonify({"success": True})
-        
-    except Exception as e:
-        print(f"Error storing simulation results: {e}")
-        results['simulation_error'] = True
-        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     # Open browser in a separate thread

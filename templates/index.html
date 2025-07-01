@@ -169,8 +169,6 @@
         status.innerHTML = 'Preparing simulation data...'
 
         try {
-          console.log('Fetching simulation data...')
-
           // Fetch simulation data from API
           const dataResponse = await fetch('/get_simulation_data')
           if (!dataResponse.ok) {
@@ -180,7 +178,6 @@
           }
 
           const data = await dataResponse.json()
-
           if (!data.success) {
             throw new Error(data.error || 'Failed to prepare simulation data')
           }
@@ -190,27 +187,24 @@
             data.rows.length,
             'strategies'
           )
-
           if (data.rows.length === 0) {
             throw new Error('No strategy data found')
           }
 
           status.innerHTML = 'Running random incentive search...'
 
-          // Run RANDOM simulation
+          // Run simulation with CORRECT data
           const simResponse = await fetch('/simulate/random', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              rows: extractedRows,
-              P_baseline: parseFloat(
-                document.getElementById('P_baseline').value
-              ),
-              P_target: parseFloat(document.getElementById('P_target').value),
-              max_epochs: 100, // Number of epochs for the simulation
-              trials: 10000, // Number of trials for random search
-              subsidy_cap: 0.15, // Value for subsidy cap
-              penalty_cap: 0.1, // Value for penalty cap
+              rows: data.rows, // ✅ Use data.rows instead of undefined extractedRows
+              P_baseline: data.P_baseline, // ✅ Use data from API
+              P_target: data.P_target, // ✅ Use data from API
+              max_epochs: 100,
+              trials: 10000,
+              subsidy_cap: 0.15,
+              penalty_cap: 0.1,
             }),
           })
 
@@ -221,10 +215,10 @@
             )
           }
 
-          // For random simulation, we get HTML response, not JSON
+          // Expecting HTML response (as route now returns)
           const htmlResponse = await simResponse.text()
 
-          // Replace the simulation section with the results
+          // Replace the simulation section with results
           const simulationSection = document.getElementById('step-6-simulation')
           const parser = new DOMParser()
           const doc = parser.parseFromString(htmlResponse, 'text/html')
@@ -233,7 +227,6 @@
           )
 
           if (resultsDiv) {
-            // Find the action section and replace it
             const actionSection =
               simulationSection.querySelector('.action-section')
             if (actionSection) {
@@ -244,14 +237,11 @@
           console.log('Random search completed successfully')
         } catch (error) {
           console.error('Random search error:', error)
-
-          // Reset button state
           btn.disabled = false
           btn.innerHTML = '🎯 Run Random Incentive Search'
           status.innerHTML = '❌ ' + error.message
           status.style.color = '#dc3545'
 
-          // Hide error after 10 seconds
           setTimeout(() => {
             status.style.display = 'none'
             status.style.color = ''

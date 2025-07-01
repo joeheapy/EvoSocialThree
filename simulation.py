@@ -176,17 +176,41 @@ def compute_payoff_improved(delta_raw: np.ndarray, share: np.ndarray, private_co
 
 # The value 0.01 is used as a tolerance for checking convergence
 # This can be adjusted based on the precision required for the target metric.
-def check_success_condition(P_t: float, P_target: float, tolerance: float = 0.01) -> bool:
-    """Check if current value is close enough to target."""
-    return abs(P_t - P_target) <= tolerance * abs(P_target)
+def check_success_condition(P_t: float, P_target: float, P_baseline: float, tolerance_percent: float = 0.10) -> bool:
+    """
+    Check if current value is close enough to target using adaptive tolerance.
+    
+    Args:
+        P_t: Current value
+        P_target: Target value  
+        P_baseline: Starting baseline value
+        tolerance_percent: Tolerance as percentage of total change needed (default 10%)
+    
+    Returns:
+        True if within tolerance of target
+    """
+    # Calculate total change needed from baseline to target
+    total_change_needed = abs(P_target - P_baseline)
+    
+    # Handle edge case where baseline equals target
+    if total_change_needed == 0:
+        return abs(P_t - P_target) <= 0.001  # Very small absolute tolerance
+    
+    # Calculate tolerance as percentage of total change
+    tolerance_value = tolerance_percent * total_change_needed
+    
+    # Check if current value is within tolerance of target
+    distance_from_target = abs(P_t - P_target)
+    
+    return distance_from_target <= tolerance_value
 
-def evaluate_solution(result: SimulationResult, P_target: float) -> Tuple[bool, float, float]:
-    """Evaluate solution quality."""
+def evaluate_solution(result: SimulationResult, P_target: float, P_baseline: float) -> Tuple[bool, float, float]:
+    """Evaluate solution quality with adaptive tolerance."""
     final_value = result.P_series[-1]
     distance = abs(final_value - P_target)
     
-    # Success if within 1% of target
-    success = distance <= 0.01 * abs(P_target)
+    # Success using adaptive tolerance (10% of total change)
+    success = check_success_condition(final_value, P_target, P_baseline, tolerance_percent=0.10)
     
     # Score combines distance and convergence speed
     speed_bonus = 1.0 / (result.t_hit + 1) if result.t_hit is not None else 0
@@ -283,8 +307,8 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
         share_history[:, :, t] = share
         payoff_history[:, :, t] = payoff
         
-        # Check stopping condition using the new function
-        if check_success_condition(P_t, P_target):
+        # Check stopping condition using the updated function
+        if check_success_condition(P_t, P_target, P_baseline, tolerance_percent=0.10):
             t_hit = t
             break
         
