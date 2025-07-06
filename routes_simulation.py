@@ -8,25 +8,25 @@ sim_bp = Blueprint('simulation', __name__)
 def simulate_random():
     """Run random incentive search simulation."""
     try:
-        # Parse JSON payload
         data = request.get_json()
         if not data:
             g.random_result = None
             g.simulation_params = {"trials": 0, "P_baseline": 0, "P_target": 0}
             return render_template('simulation_random_results.html')
         
+        # Parse parameters
         rows = data.get('rows', [])
         P_baseline = float(data.get('P_baseline', 100.0))
         P_target = float(data.get('P_target', 85.0))
         max_epochs = int(data.get('max_epochs', 50))
-        subsidy_cap = float(data.get('subsidy_cap', 0.15))  # Increased
-        penalty_cap = float(data.get('penalty_cap', 0.10))  # Increased
-        trials = int(data.get('trials', 10000))  # Increased
+        subsidy_cap = float(data.get('subsidy_cap', 0.15))
+        penalty_cap = float(data.get('penalty_cap', 0.10))
+        trials = int(data.get('trials', 10000))
         seed = data.get('seed')
         if seed is not None:
             seed = int(seed)
         
-        # Store simulation params in g for template
+        # Store params for template
         g.simulation_params = {
             "P_baseline": P_baseline,
             "P_target": P_target,
@@ -36,13 +36,12 @@ def simulate_random():
             "penalty_cap": penalty_cap
         }
         
-        # Validate input
         if not rows:
             g.random_result = None
             return render_template('simulation_random_results.html')
         
-        # Run random search
-        result, incentive_matrix = find_optimum_random(
+        # This code is calling the find_optimum_random function to run a random search optimization for finding optimal incentive structures.
+        result, incentive_matrix, sector_names = find_optimum_random(
             rows=rows,
             P_baseline=P_baseline,
             P_target=P_target,
@@ -53,36 +52,24 @@ def simulate_random():
             seed=seed
         )
         
-        # Store results in g for template
+        # Store results for template
         g.random_result = result
         g.incentive_matrix = incentive_matrix
-        g.total_budget = float(incentive_matrix.sum()) if incentive_matrix is not None else 0.0
+        g.sector_names = sector_names if sector_names else []
+        g.total_budget = float(abs(incentive_matrix).sum()) if incentive_matrix is not None else 0.0
         
+        # Always generate plots if we have a result (successful or best attempt)
         if result is not None:
-            # Extract sector names for plotting
-            sector_names = []
-            seen_sectors = set()
-            for row in rows:
-                if len(row) > 0:
-                    sector = row[0]
-                    if sector not in seen_sectors:
-                        sector_names.append(sector)
-                        seen_sectors.add(sector)
-            
-            g.sector_names = sector_names
-            
             # Generate plots
-            plot1, plot2, plot3 = generate_plots(result, P_baseline, P_target, sector_names)
+            plot1, plot2, plot3 = generate_plots(result, P_baseline, P_target, g.sector_names)
             g.plot_files = {
                 "metric_plot": plot1,
                 "shares_plot": plot2,
                 "payoffs_plot": plot3
             }
         else:
-            g.sector_names = []
             g.plot_files = {}
         
-        # Return HTML template (as frontend expects)
         return render_template('simulation_random_results.html')
         
     except Exception as e:
@@ -90,7 +77,6 @@ def simulate_random():
             import traceback
             traceback.print_exc()
         
-        # Return error template
         g.random_result = None
         g.simulation_params = {
             "trials": trials if 'trials' in locals() else 0,

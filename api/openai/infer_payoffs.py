@@ -78,19 +78,20 @@ For each strategy in the JSON below, add these two numeric fields:
 1. **delta**: How much the strategy changes the target system objective: {system_objective}
    - Negative values = improvement (moves toward the objective)
    - Positive values = worsening (moves away from the objective)  
-   - Scale: typically between -0.15 to +0.05 (stronger effects, more negative for improvements)
-   - High commitment strategies should have larger negative deltas (-0.08 to -0.15)
-   - Medium commitment strategies: (-0.04 to -0.08)
-   - Low commitment strategies: (-0.01 to -0.04)
+   - Scale: typically between -50.0 to +15.0 (stronger effects for meaningful impact)
+   - High commitment strategies should have larger negative deltas (-15.0 to -50.0)
+   - Medium commitment strategies: (-5.0 to -15.0)
+   - Low commitment strategies: (-1.0 to -5.0)
    - Use exactly 3 decimal places
 
 2. **private_cost**: Estimate the financial, reputational or political cost of the strategy to the actor
    - Higher values = more costly for the actor
-   - Scale: value between 0.005 to 0.080 (reduced maximum to create better cost-benefit ratio)
-   - High commitment strategies: 0.020-0.080
-   - Medium commitment strategies: 0.010-0.040
-   - Low commitment strategies: 0.005-0.020
+   - Scale: value between 0.50 to 4.00 (balanced cost units for effective incentives)
+   - High commitment strategies: 2.00-4.00 (significant resource commitment)
+   - Medium commitment strategies: 1.00-2.50 (moderate resource commitment)
+   - Low commitment strategies: 0.50-1.50 (minimal resource commitment)
    - Use exactly 3 decimal places
+   - Consider political capital, financial investment, and implementation complexity
 
 **Actor Weight (one per actor)**
 For each actor, add this field at the actor level:
@@ -109,9 +110,9 @@ For each actor, add this field at the actor level:
    - **This weight applies to ALL strategies for this actor**
 
 **Commitment Level Guidelines:**
-- **High commitment strategies**: Should have strong negative deltas (-0.08 to -0.15) but also high costs (0.040-0.080)
-- **Medium commitment strategies**: Moderate negative deltas (-0.04 to -0.08) with moderate costs (0.020-0.040)  
-- **Low commitment strategies**: Small negative deltas (-0.01 to -0.04) with low costs (0.005-0.020)
+- **High commitment strategies**: Should have strong negative deltas (-15.0 to -50.0) but also high costs (2.00-4.00)
+- **Medium commitment strategies**: Moderate negative deltas (-5.0 to -15.0) with moderate costs (1.00-2.50)  
+- **Low commitment strategies**: Small negative deltas (-1.0 to -5.0) with low costs (0.50-1.50)
 
 This ensures a realistic trade-off where more ambitious strategies cost more but also achieve more.
 

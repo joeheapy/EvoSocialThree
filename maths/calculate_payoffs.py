@@ -10,7 +10,7 @@ from typing import List, Tuple
 from api.openai.infer_payoffs import ActorEntry
 
 # Constants
-EPSILON = 1e-4  # tiny positive constant to avoid zero payoffs and divide by zero errors later.
+EPSILON = 0.01  # tiny positive constant to avoid zero payoffs and divide by zero errors later.
 
 
 def convert_to_dataframes(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.DataFrame]:

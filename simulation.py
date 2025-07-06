@@ -9,7 +9,7 @@ import uuid
 import os
 
 # Constants
-EPSILON = 1e-3
+EPSILON = 0.01
 
 class SimulationResult(BaseModel):
     P_series: List[float] = Field(description="Headline metric over time")
@@ -67,25 +67,26 @@ def parse_rows_to_arrays(rows: List[List]) -> Tuple[np.ndarray, np.ndarray, np.n
     if K > 3:
         K = 3  # Limit to 3 strategies
     
-    # Initialize arrays
+    # Initialize arrays - weight should be (G,) not (G, K)
     delta_raw = np.zeros((G, K))
     private_cost = np.zeros((G, K))
-    weight = np.zeros((G, K))
-    payoff_base = np.zeros((G, K))  # Base payoffs from infer_payoffs
+    weight = np.zeros(G)  # Changed: weight per actor, not per strategy
+    payoff_base = np.zeros((G, K))
     initial_shares = np.zeros((G, K))
     
     # Fill arrays
     for g, sector in enumerate(sector_names):
-        strategies = actors[sector][:K]  # Take first K strategies
+        strategies = actors[sector][:K]
+        # Set actor weight once per actor
+        if strategies:
+            weight[g] = strategies[0]['weight']  # All strategies have same actor weight
+        
         for k, strategy in enumerate(strategies):
             delta_raw[g, k] = strategy['delta']
             private_cost[g, k] = strategy['private_cost']
-            weight[g, k] = strategy['weight']
+            # Don't set weight[g, k] here - it's now weight[g]
             payoff_base[g, k] = strategy['payoff_base']
             initial_shares[g, k] = strategy['behavior_share']
-            
-            if g == 0 and k < len(strategy_ids):  # Collect strategy IDs from first actor
-                strategy_ids.append(strategy['strategy_id'])
     
     # Fill strategy_ids if not enough
     while len(strategy_ids) < K:
@@ -101,76 +102,26 @@ def parse_rows_to_arrays(rows: List[List]) -> Tuple[np.ndarray, np.ndarray, np.n
     
     return delta_raw, private_cost, weight, payoff_base, initial_shares, sector_names, strategy_ids
 
-def compute_payoff(delta_raw: np.ndarray, share: np.ndarray, private_cost: np.ndarray, payoff_base: np.ndarray, P_baseline: float, P_target: float, progress_made: float, target_direction: bool) -> np.ndarray:
-    """Calculate dynamic payoffs for all actors and strategies."""
-    G, K = delta_raw.shape
-    payoff = np.zeros((G, K))
-    
-    for g in range(G):
-        for k in range(K):
-            # Start with the pre-computed base payoff from infer_payoffs
-            base_payoff = payoff_base[g, k]
-            
-            # Dynamic payoff components
-            # 1. System progress bonus (rewards collective progress)
-            progress_bonus = progress_made * 0.5
-            
-            # 2. Strategy effectiveness bonus (rewards strategies that help reach target)
-            strategy_effectiveness = 0.0
-            if target_direction and delta_raw[g, k] < 0:  # Strategy helps move toward lower target
-                strategy_effectiveness = abs(delta_raw[g, k]) * share[g, k] * 2.0
-            elif not target_direction and delta_raw[g, k] > 0:  # Strategy helps move toward higher target
-                strategy_effectiveness = delta_raw[g, k] * share[g, k] * 2.0
-            
-            # 3. Coordination bonus (slight bonus for strategies being used by others)
-            coordination_bonus = np.mean(share[:, k]) * 0.1
-            
-            # Final payoff calculation
-            payoff[g, k] = base_payoff + progress_bonus + strategy_effectiveness + coordination_bonus
-            
-            # Ensure minimum positive payoff for stability
-            payoff[g, k] = max(payoff[g, k], EPSILON)
-    
-    return payoff
 
-def compute_payoff_improved(delta_raw: np.ndarray, share: np.ndarray, private_cost: np.ndarray, 
-                           payoff_base: np.ndarray, P_baseline: float, P_target: float, 
-                           progress_made: float, target_direction: bool) -> np.ndarray:
-    """Enhanced payoff calculation with stronger incentives."""
+def compute_payoff_simple(delta_raw: np.ndarray, share: np.ndarray, private_cost: np.ndarray, 
+                         weight: np.ndarray, incentive_adjustments: Optional[np.ndarray] = None) -> np.ndarray:
+    """Calculate payoffs using the correct formula from pay-off-formula.md"""
     G, K = delta_raw.shape
     payoff = np.zeros((G, K))
     
-    # Calculate distance to target for stronger incentives
-    distance_remaining = abs(P_target - (P_baseline + np.sum(delta_raw * share)))
-    urgency_factor = min(2.0, 1.0 + distance_remaining / abs(P_target - P_baseline))
+    # Apply incentive adjustments to costs if provided
+    effective_cost = private_cost.copy()
+    if incentive_adjustments is not None:
+        effective_cost = private_cost - incentive_adjustments
+        # Don't clip to zero - allow negative effective costs (high subsidies)
     
     for g in range(G):
         for k in range(K):
-            base_payoff = payoff_base[g, k]
-            
-            # 1. Enhanced progress bonus
-            progress_bonus = progress_made * 1.0 * urgency_factor
-            
-            # 2. Stronger strategy effectiveness bonus
-            strategy_effectiveness = 0.0
-            if target_direction and delta_raw[g, k] < 0:
-                # Exponential bonus for very effective strategies
-                effectiveness = abs(delta_raw[g, k]) * share[g, k]
-                strategy_effectiveness = effectiveness * 3.0 * urgency_factor
-            elif not target_direction and delta_raw[g, k] > 0:
-                effectiveness = delta_raw[g, k] * share[g, k]
-                strategy_effectiveness = effectiveness * 3.0 * urgency_factor
-            
-            # 3. Anti-coordination penalty for harmful strategies
-            anti_coordination = 0.0
-            if (target_direction and delta_raw[g, k] > 0) or (not target_direction and delta_raw[g, k] < 0):
-                anti_coordination = -np.mean(share[:, k]) * 0.5 * urgency_factor
-            
-            # 4. Cost-adjusted payoff (incentives already applied to private_cost)
-            cost_penalty = -private_cost[g, k] * 0.5
-            
-            payoff[g, k] = base_payoff + progress_bonus + strategy_effectiveness + anti_coordination + cost_penalty
-            payoff[g, k] = max(payoff[g, k], EPSILON)
+            # Correct formula: weight[g] not weight[g, k]
+            social_gain = weight[g] * (-delta_raw[g, k])
+            raw_payoff = social_gain - effective_cost[g, k]
+            # CHANGED: Allow negative payoffs, just ensure minimum share movement
+            payoff[g, k] = raw_payoff
     
     return payoff
 
@@ -218,34 +169,74 @@ def evaluate_solution(result: SimulationResult, P_target: float, P_baseline: flo
     
     return success, score, distance
 
-def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epochs: int, scale: Optional[float] = None, cost_override: Optional[np.ndarray] = None) -> SimulationResult:
-    """Run evolutionary game theory simulation."""
+def normalize_simulation_data(delta_raw: np.ndarray, private_cost: np.ndarray, P_baseline: float, P_target: float) -> Tuple[np.ndarray, np.ndarray, float, float, float]:
+    """Normalize ALL simulation data consistently."""
+    
+    # Calculate the change needed
+    target_change = P_target - P_baseline
+    
+    # Find scale based on delta magnitudes - we want deltas to be able to drive meaningful change
+    max_delta_impact = np.sum(np.abs(delta_raw))
+    
+    if max_delta_impact > 0:
+        # Scale so that maximum delta impact could drive the full baseline->target change
+        scale_factor = abs(target_change) / max_delta_impact if max_delta_impact > 0 else 1.0
+        # Add a multiplier to ensure deltas are large enough to drive change
+        scale_factor *= 2.0  # 2x multiplier for stronger effects
+    else:
+        scale_factor = 1.0
+    
+    # Normalize deltas
+    normalized_delta = delta_raw * scale_factor
+    
+    # Normalize costs proportionally 
+    normalized_cost = private_cost * scale_factor
+    
+    # FIXED: Normalize baseline and target to a standard range (0-100)
+    if abs(target_change) > 0:
+        normalized_baseline = 50.0  # Standard baseline
+        normalized_target = 50.0 + (target_change / abs(target_change)) * 25.0  # Target 25 units away
+    else:
+        normalized_baseline = 50.0
+        normalized_target = 50.0
+    
+    print(f"NORMALIZATION: Original range {P_baseline:.0f} -> {P_target:.0f}")
+    print(f"NORMALIZATION: Normalized range {normalized_baseline:.1f} -> {normalized_target:.1f}")
+    print(f"NORMALIZATION: Scale factor = {scale_factor:.8f}")
+    print(f"NORMALIZATION: Delta range scaled by {scale_factor:.6f}")
+    
+    return normalized_delta, normalized_cost, normalized_baseline, normalized_target, scale_factor
+
+def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epochs: int, 
+                  scale: Optional[float] = None, incentive_adjustments: Optional[np.ndarray] = None) -> SimulationResult:
+    """Run evolutionary game theory simulation with proper normalization."""
     
     if not rows:
         raise ValueError("No data provided for simulation")
     
-    # Parse input data - includes base payoffs
+    # Parse input data
     delta_raw, private_cost, weight, payoff_base, initial_shares, sector_names, strategy_ids = parse_rows_to_arrays(rows)
     
-    # Use cost override if provided
-    if cost_override is not None:
-        private_cost = cost_override.copy()
+    # NORMALIZE delta and cost consistently
+    normalized_delta, normalized_cost, norm_baseline, norm_target, scale_factor = normalize_simulation_data(
+        delta_raw, private_cost, P_baseline, P_target
+    )
     
-    G, K = delta_raw.shape
+    # Scale incentives to match normalized costs
+    normalized_incentives = None
+    if incentive_adjustments is not None:
+        normalized_incentives = incentive_adjustments * scale_factor
+    
+    G, K = normalized_delta.shape
     
     # DEBUG: Print simulation setup
-    print(f"DEBUG SIMULATION: Baseline={P_baseline:.3f}, Target={P_target:.3f}")
+    print(f"DEBUG SIMULATION: Baseline={P_baseline:.0f}, Target={P_target:.0f}")
+    print(f"DEBUG SIMULATION: Normalized baseline={norm_baseline:.1f}, target={norm_target:.1f}")
     print(f"DEBUG SIMULATION: {G} actors, {K} strategies per actor")
     print(f"DEBUG SIMULATION: Target direction={'DOWN' if P_target < P_baseline else 'UP'}")
+    print(f"DEBUG SIMULATION: Scale factor={scale_factor:.6f}")
     
-    # Determine scale for normalization
-    if scale is None:
-        if 0 <= abs(P_baseline) <= 1:
-            scale = 1.0
-        else:
-            scale = abs(P_baseline) if P_baseline != 0 else 1.0
-    
-    # Initialize storage arrays
+    # Initialize storage
     P_series = []
     share_history = np.zeros((G, K, max_epochs))
     payoff_history = np.zeros((G, K, max_epochs))
@@ -254,84 +245,77 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
     share = initial_shares.copy()
     t_hit = None
     
-    # Determine if we're moving towards target (up or down)
-    target_direction = P_target < P_baseline
-    progress_needed = abs(P_target - P_baseline)
-    
-    # Higher learning rate for more dynamic behavior
-    def calculate_adaptive_learning_rate(progress_made: float, distance_to_target: float) -> float:
-        """Higher learning rates when close to target or making slow progress."""
-        base_rate = 0.3
-        
-        # Increase rate when very close to target
-        proximity_boost = min(1.0, 2.0 * (1.0 - distance_to_target / abs(P_target - P_baseline)))
-        
-        # Increase rate when progress is slow
-        progress_boost = 1.0 if progress_made < 0.1 else 0.5
-        
-        return min(0.8, base_rate * (1.0 + proximity_boost + progress_boost))
-    
-    # Initialize progress_made to avoid UnboundLocalError
-    progress_made = 0.0
+    # Adaptive learning rate parameters
+    base_learning_rate = 0.05  # Lower base rate
+    max_learning_rate = 0.3    # Higher max rate for far distances
+    min_learning_rate = 0.01   # Minimum rate when very close
     
     for t in range(max_epochs):
-        # Calculate current headline metric
-        P_t = P_baseline + np.sum(delta_raw * share)
+        # Calculate current headline metric in normalized space
+        P_t_normalized = norm_baseline + np.sum(normalized_delta * share)
+        
+        # Convert back to original scale for reporting and target checking
+        normalized_change = P_t_normalized - norm_baseline
+        original_change = normalized_change / scale_factor
+        P_t = P_baseline + original_change
         P_series.append(float(P_t))
         
-        # Better progress calculation
-        if progress_needed > 0:
-            if target_direction:  # Moving down (P_target < P_baseline)
-                progress_made = max(0, (P_baseline - P_t) / progress_needed)
-            else:  # Moving up (P_target > P_baseline)
-                progress_made = max(0, (P_t - P_baseline) / progress_needed)
+        # Calculate adaptive learning rate based on distance to target (in original scale)
+        distance_to_target = abs(P_t - P_target)
+        total_distance_needed = abs(P_target - P_baseline)
+        
+        if total_distance_needed > 0:
+            # Normalize distance (0 = at target, 1 = at baseline)
+            normalized_distance = distance_to_target / total_distance_needed
+            # Scale learning rate: higher when far, lower when close
+            learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * normalized_distance
+            learning_rate = max(learning_rate, min_learning_rate)
         else:
-            progress_made = 1.0
+            learning_rate = base_learning_rate
         
-        # Cap progress at 1.0
-        progress_made = min(progress_made, 1.0)
-        
-        # DEBUG: Print every 10 epochs
+        # DEBUG: Print every 10 epochs  
         if t % 10 == 0:
-            print(f"DEBUG SIMULATION: Epoch {t}, P_t={P_t:.6f}, Progress={(progress_made*100):.1f}%")
+            print(f"DEBUG SIMULATION: Epoch {t}, P_t={P_t:.0f} (normalized: {P_t_normalized:.3f})")
+            print(f"  Distance to target: {distance_to_target:.1f}, Learning rate: {learning_rate:.4f}")
+            print(f"  Normalized change: {normalized_change:.3f}, Original change: {original_change:.1f}")
         
-        # Calculate dynamic payoffs using helper function
-        payoff = compute_payoff(delta_raw, share, private_cost, payoff_base, P_baseline, P_target, progress_made, target_direction)
+        # Calculate payoffs using normalized values
+        payoff = compute_payoff_simple(normalized_delta, share, normalized_cost, weight, normalized_incentives)
         
-        # Additional debug info after payoff calculation
+        # Additional debug info
         if t % 10 == 0:
-            print(f"  Sample payoffs: {payoff[0, :].round(6)}")
-            print(f"  Sample shares: {share[0, :].round(3)}")
+            print(f"  Sample payoffs: {payoff[0, :].round(4)}")
+            print(f"  Sample shares: {share[0, :].round(4)}")
+            avg_payoff = np.mean(payoff[0, :])
+            fitness_diffs = payoff[0, :] - avg_payoff
+            print(f"  Fitness diffs: {fitness_diffs.round(6)}")
         
         # Store current state
         share_history[:, :, t] = share
         payoff_history[:, :, t] = payoff
         
-        # Check stopping condition using the updated function
+        # Check stopping condition using original scale
         if check_success_condition(P_t, P_target, P_baseline, tolerance_percent=0.10):
             t_hit = t
+            print(f"DEBUG SIMULATION: Target reached at epoch {t}!")
             break
         
-        # Replicator dynamics update with stronger response
+        # Replicator dynamics update with adaptive learning rate
         if t < max_epochs - 1:
             new_share = share.copy()
             
             for g in range(G):
-                # Calculate average payoff for this actor
                 avg_payoff_g = np.sum(share[g, :] * payoff[g, :])
                 
-                if avg_payoff_g > EPSILON:
-                    # Enhanced replicator dynamics with stronger fitness differences
+                # Modified: Allow dynamics even with negative average payoffs
+                if abs(avg_payoff_g) > EPSILON:
                     for k in range(K):
                         fitness_diff = payoff[g, k] - avg_payoff_g
-                        # Amplify fitness differences for more dynamic behavior
-                        amplified_diff = fitness_diff * 1.5
-                        new_share[g, k] = share[g, k] + calculate_adaptive_learning_rate(progress_made, abs(P_target - P_baseline)) * share[g, k] * amplified_diff
-                        
-                        # Ensure non-negative with higher minimum
-                        new_share[g, k] = max(new_share[g, k], EPSILON * 10)
+                        # Use adaptive learning rate and absolute value of avg_payoff_g for scaling
+                        new_share[g, k] = share[g, k] * (1 + learning_rate * fitness_diff / abs(avg_payoff_g))
+                        new_share[g, k] = max(new_share[g, k], EPSILON)
                 
-                # Renormalize to ensure shares sum to 1
+                # Renormalize each actor's shares
                 row_sum = np.sum(new_share[g, :])
                 if row_sum > EPSILON:
                     new_share[g, :] /= row_sum
@@ -340,13 +324,13 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
             
             share = new_share
     
-    # Trim arrays to actual simulation length
+    # Return results in ORIGINAL scale
     actual_length = len(P_series)
     share_trimmed = share_history[:, :, :actual_length]
     payoff_trimmed = payoff_history[:, :, :actual_length]
     
     return SimulationResult(
-        P_series=P_series,
+        P_series=P_series,  # Already in original scale
         share=share_trimmed.tolist(),
         payoff=payoff_trimmed.tolist(),
         t_hit=t_hit

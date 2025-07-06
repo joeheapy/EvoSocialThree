@@ -9,12 +9,12 @@ def find_optimum_random(
     max_epochs: int,
     *,
     scale: Optional[float] = None,
-    subsidy_cap: float = 0.15,  # Search for subsidies
-    penalty_cap: float = 0.10,  # Search for penalties
-    trials: int = 10000,        # Number of random trials
+    subsidy_cap: float = 0.15,
+    penalty_cap: float = 0.10,
+    trials: int = 10000,
     early_exit: bool = True,
     seed: Optional[int] = None,
-) -> Tuple[Optional[SimulationResult], Optional[np.ndarray]]:
+) -> Tuple[Optional[SimulationResult], Optional[np.ndarray], Optional[List[str]]]:
     
     # Parse input data
     delta_raw, private_cost, weight, payoff_base, initial_shares, sector_names, strategy_ids = parse_rows_to_arrays(rows)
@@ -23,12 +23,30 @@ def find_optimum_random(
     rng = np.random.default_rng(seed)
     target_direction = P_target < P_baseline
     
-    # Calculate strategy importance based on delta magnitude and current shares
+    # Calculate strategy importance
     strategy_importance = np.abs(delta_raw) * initial_shares
     
+    # OPTION D: Scale incentive caps based on cost magnitudes and target distance
+    avg_cost = np.mean(private_cost[private_cost > 0])
+    target_distance = abs(P_target - P_baseline)
+    
+    # Scale caps based on average costs and target ambition
+    cost_scale_factor = max(1.0, avg_cost / 0.1)  # Scale up if costs are high
+    distance_scale_factor = max(1.0, target_distance / 10000)  # Scale up for ambitious targets
+    
+    # Adaptive caps - much higher than before
+    adaptive_subsidy_cap = subsidy_cap * cost_scale_factor * distance_scale_factor * 5.0  # 5x multiplier
+    adaptive_penalty_cap = penalty_cap * cost_scale_factor * distance_scale_factor * 4.0   # 4x multiplier
+    
+    print(f"DEBUG INCENTIVES: Original caps - Subsidy: {subsidy_cap:.3f}, Penalty: {penalty_cap:.3f}")
+    print(f"DEBUG INCENTIVES: Cost scale factor: {cost_scale_factor:.3f}, Distance scale factor: {distance_scale_factor:.3f}")
+    print(f"DEBUG INCENTIVES: Adaptive caps - Subsidy: {adaptive_subsidy_cap:.3f}, Penalty: {adaptive_penalty_cap:.3f}")
+    print(f"DEBUG INCENTIVES: Average private cost: {avg_cost:.6f}")
+    
     best_result = None
-    best_pi = None
+    best_incentives = None
     best_budget = float('inf')
+    best_distance = float('inf')  # Track best distance to target
     
     for trial in range(trials):
         pi_sub = np.zeros((G, K))
@@ -36,65 +54,88 @@ def find_optimum_random(
         
         for g in range(G):
             for k in range(K):
-                # Weight incentives by strategy importance
                 importance_weight = strategy_importance[g, k] + 0.1
                 
-                # More aggressive incentives for helpful strategies
                 if target_direction and delta_raw[g, k] < 0:  # Want to reduce P
-                    # Give larger subsidies to more impactful strategies
-                    max_subsidy = subsidy_cap * min(2.0, importance_weight * 5.0)  # Increased multiplier
-                    pi_sub[g, k] = rng.uniform(subsidy_cap * 0.3, min(max_subsidy, subsidy_cap))  # Higher minimum
-                elif target_direction and delta_raw[g, k] > 0:  # Penalize harmful strategies
-                    max_penalty = penalty_cap * min(2.0, importance_weight * 3.0)
-                    pi_pen[g, k] = rng.uniform(penalty_cap * 0.2, min(max_penalty, penalty_cap))
+                    # Much higher subsidies for helpful strategies
+                    max_subsidy = adaptive_subsidy_cap * min(3.0, importance_weight * 8.0)
+                    pi_sub[g, k] = rng.uniform(adaptive_subsidy_cap * 0.2, min(max_subsidy, adaptive_subsidy_cap * 2.0))
+                elif target_direction and delta_raw[g, k] > 0:  # Penalize harmful
+                    # Much higher penalties for harmful strategies
+                    max_penalty = adaptive_penalty_cap * min(3.0, importance_weight * 6.0)
+                    pi_pen[g, k] = rng.uniform(adaptive_penalty_cap * 0.1, min(max_penalty, adaptive_penalty_cap * 2.0))
                 elif not target_direction and delta_raw[g, k] > 0:  # Want to increase P
-                    max_subsidy = subsidy_cap * importance_weight
-                    pi_sub[g, k] = rng.uniform(0, min(max_subsidy, subsidy_cap))
+                    max_subsidy = adaptive_subsidy_cap * importance_weight * 2.0
+                    pi_sub[g, k] = rng.uniform(0, min(max_subsidy, adaptive_subsidy_cap))
                 elif not target_direction and delta_raw[g, k] < 0:
-                    max_penalty = penalty_cap * importance_weight
-                    pi_pen[g, k] = rng.uniform(0, min(max_penalty, penalty_cap))
+                    max_penalty = adaptive_penalty_cap * importance_weight * 2.0
+                    pi_pen[g, k] = rng.uniform(0, min(max_penalty, adaptive_penalty_cap))
         
-        # Calculate modified costs: cost' = private_cost - subsidies + penalties
-        cost_override = private_cost - pi_sub + pi_pen
-        cost_override = np.clip(cost_override, 0, None)  # Ensure non-negative
-        
-        # Calculate total budget
+        # Net incentives for simulation
+        incentive_net = pi_sub - pi_pen
         total_budget = pi_sub.sum() + pi_pen.sum()
         
+        # Debug incentive magnitudes on first trial
+        if trial == 0:
+            print(f"DEBUG INCENTIVES: Sample incentive_net values: {incentive_net.flatten()[:5].round(6)}")
+            print(f"DEBUG INCENTIVES: Sample subsidy values: {pi_sub.flatten()[:5].round(6)}")
+            print(f"DEBUG INCENTIVES: Sample penalty values: {pi_pen.flatten()[:5].round(6)}")
+            print(f"DEBUG INCENTIVES: Total budget for trial 0: {total_budget:.6f}")
+        
         try:
-            # Run simulation with modified costs
             result = run_simulation(
                 rows=rows,
                 P_baseline=P_baseline,
                 P_target=P_target,
                 max_epochs=max_epochs,
                 scale=scale,
-                cost_override=cost_override
+                incentive_adjustments=incentive_net
             )
             
-            # Check if target was hit and budget is better
-            if result.t_hit is not None and total_budget < best_budget:
+            # Calculate distance to target
+            final_value = result.P_series[-1]
+            distance_to_target = abs(final_value - P_target)
+            
+            # Update best result based on success first, then distance, then budget
+            is_better = False
+            
+            if result.t_hit is not None:  # This trial succeeded
+                if best_result is None or best_result.t_hit is None:
+                    # First successful trial, or previous best didn't succeed
+                    is_better = True
+                elif total_budget < best_budget:
+                    # Both succeeded, prefer lower budget
+                    is_better = True
+            else:  # This trial didn't succeed
+                if best_result is None or best_result.t_hit is None:
+                    # No successful trial yet, prefer closer to target
+                    if distance_to_target < best_distance:
+                        is_better = True
+                # If we already have a successful trial, don't replace it with a failed one
+            
+            if is_better:
                 best_result = result
-                best_pi = pi_sub - pi_pen  # Store net incentives (positive = subsidy, negative = penalty)
+                best_incentives = incentive_net
                 best_budget = total_budget
+                best_distance = distance_to_target
                 
-                print(f"Trial {trial}: Success at epoch {result.t_hit}, budget {total_budget:.6f}")
-                
-                if early_exit:
-                    break
+                if result.t_hit is not None:
+                    print(f"Trial {trial}: Success at epoch {result.t_hit}, budget {total_budget:.6f}")
+                    if early_exit:
+                        break
+                else:
+                    print(f"Trial {trial}: Best attempt so far, distance {distance_to_target:.6f}, budget {total_budget:.6f}")
             
         except Exception as e:
-            # Skip failed simulations
             if trial % 1000 == 0:
                 print(f"Trial {trial}: Simulation failed - {e}")
             continue
         
         if trial % 1000 == 0:
-            print(f"Completed {trial} trials, best budget so far: {best_budget:.6f}")
+            status = "successful" if best_result and best_result.t_hit is not None else "closest"
+            print(f"Completed {trial} trials, best {status} distance: {best_distance:.6f}, budget: {best_budget:.6f}")
     
-    if best_result is not None:
-        print(f"Search completed. Best solution: epoch {best_result.t_hit}, budget {best_budget:.6f}")
-    else:
-        print("Search completed. No solution found.")
+    final_status = "solution found" if best_result and best_result.t_hit is not None else "closest attempt found"
+    print(f"Search completed. {final_status.capitalize()}")
     
-    return best_result, best_pi
+    return best_result, best_incentives, sector_names

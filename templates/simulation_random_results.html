@@ -6,9 +6,9 @@
       <div class="stat-item">
         <span class="stat-label">Search Outcome:</span>
         <span class="stat-value">
-          {% if g.random_result.t_hit is not none %} ✅ Solution found at epoch
-          {{ g.random_result.t_hit }} {% else %} ❌ No solution found in {{
-          g.simulation_params.trials }} trials {% endif %}
+          {% if g.random_result.t_hit is not none %} Solution found at epoch {{
+          g.random_result.t_hit }} {% else %} Best attempt shown (target not
+          reached in {{ g.simulation_params.trials }} trials) {% endif %}
         </span>
       </div>
       <div class="stat-item">
@@ -79,6 +79,13 @@
 
   <div class="simulation-plots">
     <h3>Simulation Visualizations</h3>
+    {% if g.random_result.t_hit is not none %}
+    <p class="plot-intro">
+      Results from the optimal solution that reached the target:
+    </p>
+    {% else %}
+    <p class="plot-intro">Results from the best attempt (closest to target):</p>
+    {% endif %}
 
     <div class="plot-container">
       <h4>Headline Metric Over Time</h4>
@@ -88,7 +95,9 @@
         class="simulation-plot"
       />
       <p class="plot-description">
-        Shows how the target metric evolves with optimal incentives applied.
+        Shows how the target metric evolves with {% if g.random_result.t_hit is
+        not none %}optimal{% else %}best available{% endif %} incentives
+        applied.
       </p>
     </div>
 
