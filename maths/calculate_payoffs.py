@@ -56,60 +56,19 @@ def convert_to_dataframes(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.Da
 def calculate_payoffs_epoch_0(actors_df: pd.DataFrame, strategies_df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate payoffs for epoch 0 using actor-level weights.
-    
-    for each actor g in 1 … G:
-        for each strategy k in 1 … K:
-            social_gain  =  weight[g]  *  (- delta[g][k])  # Note: weight per actor now
-            raw_payoff   =  social_gain  -  cost[g][k]
-            payoff[g][k][0] =  max(raw_payoff + EPSILON, EPSILON)
-    
-    Parameters
-    ----------
-    actors_df : pd.DataFrame
-        DataFrame with actor information including weights
-    strategies_df : pd.DataFrame
-        DataFrame with strategy information including delta and cost
-        
-    Returns
-    -------
-    pd.DataFrame
-        strategies_df with added 'payoff_epoch_0' column
     """
     # Create a copy to avoid modifying the original
     result_df = strategies_df.copy()
     
-    # DEBUG: Print the dataframe with actor-level weights
-    print("DEBUG: Strategies DataFrame with actor-level weights:")
-    print(result_df.head(10))
-    print()
-    
     # Apply the algorithm using actor-level weights
-    # social_gain = weight[g] * (- delta[g][k])  # Note: weight per actor now
     result_df['social_gain'] = result_df['weight'] * (-result_df['delta'])
-    
-    # DEBUG: Print social gain calculations
-    print("DEBUG: Social gain calculations:")
-    for idx, row in result_df.iterrows():
-        print(f"  {row['strategy_id']}: weight={row['weight']:.3f} × (-delta={-row['delta']:.3f}) = {row['social_gain']:.6f}")
-    print()
     
     # raw_payoff = social_gain - cost[g][k]
     result_df['raw_payoff'] = result_df['social_gain'] - result_df['cost']
     
-    # DEBUG: Print raw payoff calculations
-    print("DEBUG: Raw payoff calculations:")
-    for idx, row in result_df.iterrows():
-        print(f"  {row['strategy_id']}: social_gain={row['social_gain']:.6f} - cost={row['cost']:.3f} = {row['raw_payoff']:.6f}")
-    print()
-    
-    # payoff[g][k][0] = max(raw_payoff + EPSILON, EPSILON)
-    result_df['payoff_epoch_0'] = np.maximum(result_df['raw_payoff'] + EPSILON, EPSILON)
-    
-    # DEBUG: Print final payoff calculations
-    print("DEBUG: Final payoff calculations:")
-    for idx, row in result_df.iterrows():
-        print(f"  {row['strategy_id']}: max({row['raw_payoff']:.6f} + {EPSILON:.3f}, {EPSILON:.3f}) = {row['payoff_epoch_0']:.6f}")
-    print()
+    # FIXED: Remove the artificial floor to allow for realistic negative payoffs.
+    # The simulation engine is designed to handle negative values correctly.
+    result_df['payoff_epoch_0'] = result_df['raw_payoff']
     
     # Drop intermediate calculation columns
     result_df = result_df.drop(['social_gain', 'raw_payoff'], axis=1)
@@ -163,16 +122,6 @@ def process_payoffs_data(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.Dat
     """
     Main function to convert ActorEntry list to DataFrames with calculated payoffs
     and return updated actors with payoff information.
-    
-    Parameters
-    ----------
-    actors : List[ActorEntry]
-        List of actors with strategies from infer_payoffs
-        
-    Returns
-    -------
-    Tuple[pd.DataFrame, pd.DataFrame, List[ActorEntry]]
-        (actors_df, strategies_df_with_payoffs, updated_actors)
     """
     # Convert to DataFrames
     actors_df, strategies_df = convert_to_dataframes(actors)
@@ -181,6 +130,7 @@ def process_payoffs_data(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.Dat
     strategies_df_with_payoffs = calculate_payoffs_epoch_0(actors_df, strategies_df)
     
     # Add payoffs back to ActorEntry objects for template use
+    # FIXED: Pass the DataFrame that actually CONTAINS the calculated payoffs
     updated_actors = add_payoffs_to_actors(actors, strategies_df_with_payoffs)
     
     return actors_df, strategies_df_with_payoffs, updated_actors

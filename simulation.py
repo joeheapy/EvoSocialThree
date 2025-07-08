@@ -103,26 +103,21 @@ def parse_rows_to_arrays(rows: List[List]) -> Tuple[np.ndarray, np.ndarray, np.n
     return delta_raw, private_cost, weight, payoff_base, initial_shares, sector_names, strategy_ids
 
 
-def compute_payoff_simple(delta_raw: np.ndarray, share: np.ndarray, private_cost: np.ndarray, 
-                         weight: np.ndarray, incentive_adjustments: Optional[np.ndarray] = None) -> np.ndarray:
-    """Calculate payoffs using the correct formula from pay-off-formula.md"""
-    G, K = delta_raw.shape
-    payoff = np.zeros((G, K))
+def compute_payoff_simple(payoff_base: np.ndarray, incentive_adjustments: Optional[np.ndarray] = None) -> np.ndarray:
+    """
+    Calculate current payoffs by adding incentives to the base payoff.
+    This is much simpler and more correct.
+    """
+    # Start with the normalized base payoffs
+    payoff = payoff_base.copy()
     
-    # Apply incentive adjustments to costs if provided
-    effective_cost = private_cost.copy()
+    # Add the effect of incentives if they exist
     if incentive_adjustments is not None:
-        effective_cost = private_cost - incentive_adjustments
-        # Don't clip to zero - allow negative effective costs (high subsidies)
-    
-    for g in range(G):
-        for k in range(K):
-            # Correct formula: weight[g] not weight[g, k]
-            social_gain = weight[g] * (-delta_raw[g, k])
-            raw_payoff = social_gain - effective_cost[g, k]
-            # CHANGED: Allow negative payoffs, just ensure minimum share movement
-            payoff[g, k] = raw_payoff
-    
+        # Incentives are structured as (subsidy - penalty).
+        # A subsidy increases payoff, a penalty decreases it.
+        # The incentive_adjustments are already scaled, so we just add them.
+        payoff += incentive_adjustments
+        
     return payoff
 
 # The value 0.01 is used as a tolerance for checking convergence
@@ -169,7 +164,7 @@ def evaluate_solution(result: SimulationResult, P_target: float, P_baseline: flo
     
     return success, score, distance
 
-def normalize_simulation_data(delta_raw: np.ndarray, private_cost: np.ndarray, P_baseline: float, P_target: float) -> Tuple[np.ndarray, np.ndarray, float, float, float]:
+def normalize_simulation_data(delta_raw: np.ndarray, private_cost: np.ndarray, payoff_base: np.ndarray, P_baseline: float, P_target: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float, float, float]:
     """Normalize ALL simulation data consistently."""
     
     # Calculate the change needed
@@ -189,8 +184,9 @@ def normalize_simulation_data(delta_raw: np.ndarray, private_cost: np.ndarray, P
     # Normalize deltas
     normalized_delta = delta_raw * scale_factor
     
-    # Normalize costs proportionally 
+    # Normalize costs and base payoffs proportionally 
     normalized_cost = private_cost * scale_factor
+    normalized_payoff_base = payoff_base * scale_factor
     
     # FIXED: Normalize baseline and target to a standard range (0-100)
     if abs(target_change) > 0:
@@ -205,7 +201,7 @@ def normalize_simulation_data(delta_raw: np.ndarray, private_cost: np.ndarray, P
     print(f"NORMALIZATION: Scale factor = {scale_factor:.8f}")
     print(f"NORMALIZATION: Delta range scaled by {scale_factor:.6f}")
     
-    return normalized_delta, normalized_cost, normalized_baseline, normalized_target, scale_factor
+    return normalized_delta, normalized_cost, normalized_payoff_base, normalized_baseline, normalized_target, scale_factor
 
 def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epochs: int, 
                   scale: Optional[float] = None, incentive_adjustments: Optional[np.ndarray] = None) -> SimulationResult:
@@ -217,9 +213,9 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
     # Parse input data
     delta_raw, private_cost, weight, payoff_base, initial_shares, sector_names, strategy_ids = parse_rows_to_arrays(rows)
     
-    # NORMALIZE delta and cost consistently
-    normalized_delta, normalized_cost, norm_baseline, norm_target, scale_factor = normalize_simulation_data(
-        delta_raw, private_cost, P_baseline, P_target
+    # NORMALIZE ALL data consistently
+    normalized_delta, normalized_cost, normalized_payoff_base, norm_baseline, norm_target, scale_factor = normalize_simulation_data(
+        delta_raw, private_cost, payoff_base, P_baseline, P_target
     )
     
     # Scale incentives to match normalized costs
@@ -280,7 +276,7 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
             print(f"  Normalized change: {normalized_change:.3f}, Original change: {original_change:.1f}")
         
         # Calculate payoffs using normalized values
-        payoff = compute_payoff_simple(normalized_delta, share, normalized_cost, weight, normalized_incentives)
+        payoff = compute_payoff_simple(normalized_payoff_base, normalized_incentives)
         
         # Additional debug info
         if t % 10 == 0:
