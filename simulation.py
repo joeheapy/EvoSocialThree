@@ -4,12 +4,11 @@ from typing import List, Optional, Tuple
 from pydantic import BaseModel, Field
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
+from config import SIMULATION_MAX_EPOCHS
 import matplotlib.pyplot as plt
 import uuid
 import os
-
-# Constants
-EPSILON = 0.01
+from config import SIMULATION_EPSILON, SIMULATION_BASE_LEARNING_RATE, SIMULATION_MAX_LEARNING_RATE, SIMULATION_MIN_LEARNING_RATE
 
 class SimulationResult(BaseModel):
     P_series: List[float] = Field(description="Headline metric over time")
@@ -241,10 +240,6 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
     share = initial_shares.copy()
     t_hit = None
     
-    # Adaptive learning rate parameters
-    base_learning_rate = 0.05  # Lower base rate
-    max_learning_rate = 0.3    # Higher max rate for far distances
-    min_learning_rate = 0.01   # Minimum rate when very close
     
     for t in range(max_epochs):
         # Calculate current headline metric in normalized space
@@ -264,10 +259,10 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
             # Normalize distance (0 = at target, 1 = at baseline)
             normalized_distance = distance_to_target / total_distance_needed
             # Scale learning rate: higher when far, lower when close
-            learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * normalized_distance
-            learning_rate = max(learning_rate, min_learning_rate)
+            learning_rate = SIMULATION_MIN_LEARNING_RATE + (SIMULATION_MAX_LEARNING_RATE - SIMULATION_MIN_LEARNING_RATE) * normalized_distance
+            learning_rate = max(learning_rate, SIMULATION_MIN_LEARNING_RATE)
         else:
-            learning_rate = base_learning_rate
+            learning_rate = SIMULATION_BASE_LEARNING_RATE
         
         # DEBUG: Print every 10 epochs  
         if t % 10 == 0:
@@ -304,16 +299,16 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
                 avg_payoff_g = np.sum(share[g, :] * payoff[g, :])
                 
                 # Modified: Allow dynamics even with negative average payoffs
-                if abs(avg_payoff_g) > EPSILON:
+                if abs(avg_payoff_g) > SIMULATION_EPSILON:
                     for k in range(K):
                         fitness_diff = payoff[g, k] - avg_payoff_g
                         # Use adaptive learning rate and absolute value of avg_payoff_g for scaling
                         new_share[g, k] = share[g, k] * (1 + learning_rate * fitness_diff / abs(avg_payoff_g))
-                        new_share[g, k] = max(new_share[g, k], EPSILON)
+                        new_share[g, k] = max(new_share[g, k], SIMULATION_EPSILON)
                 
                 # Renormalize each actor's shares
                 row_sum = np.sum(new_share[g, :])
-                if row_sum > EPSILON:
+                if row_sum > SIMULATION_EPSILON:
                     new_share[g, :] /= row_sum
                 else:
                     new_share[g, :] = 1/K
@@ -422,7 +417,7 @@ def generate_sample_json(rows_path: str, out_path: str):
         rows=rows,
         P_baseline=100.0,
         P_target=85.0,
-        max_epochs=50
+        max_epochs=SIMULATION_MAX_EPOCHS
     )
     
     with open(out_path, 'w') as f:

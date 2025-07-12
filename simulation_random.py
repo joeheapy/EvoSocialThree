@@ -1,17 +1,18 @@
 import numpy as np
 from typing import List, Optional, Tuple
 from simulation import run_simulation, parse_rows_to_arrays, SimulationResult
+from config import SIMULATION_TRIALS, SIMULATION_SUBSIDY_CAP, SIMULATION_PENALTY_CAP, SIMULATION_MAX_EPOCHS, SIMULATION_ADAPTIVE_CAP_S_MULTIPLIER, SIMULATION_ADAPTIVE_CAP_P_MULTIPLIER
 
 def find_optimum_random(
     rows: List[List],
     P_baseline: float,
     P_target: float,
-    max_epochs: int,
+    max_epochs: int = SIMULATION_MAX_EPOCHS,
     *,
     scale: Optional[float] = None,
-    subsidy_cap: float = 0.15,
-    penalty_cap: float = 0.10,
-    trials: int = 10000,
+    subsidy_cap: float = SIMULATION_SUBSIDY_CAP,
+    penalty_cap: float = SIMULATION_PENALTY_CAP,
+    trials: int = SIMULATION_TRIALS,
     early_exit: bool = True,
     seed: Optional[int] = None,
 ) -> Tuple[Optional[SimulationResult], Optional[np.ndarray], Optional[List[str]]]:
@@ -35,8 +36,8 @@ def find_optimum_random(
     distance_scale_factor = max(1.0, target_distance / 10000)  # Scale up for ambitious targets
     
     # Adaptive caps - much higher than before
-    adaptive_subsidy_cap = subsidy_cap * cost_scale_factor * distance_scale_factor * 5.0  # 5x multiplier
-    adaptive_penalty_cap = penalty_cap * cost_scale_factor * distance_scale_factor * 4.0   # 4x multiplier
+    adaptive_subsidy_cap = subsidy_cap * cost_scale_factor * distance_scale_factor * SIMULATION_ADAPTIVE_CAP_S_MULTIPLIER
+    adaptive_penalty_cap = penalty_cap * cost_scale_factor * distance_scale_factor * SIMULATION_ADAPTIVE_CAP_P_MULTIPLIER
     
     print(f"DEBUG INCENTIVES: Original caps - Subsidy: {subsidy_cap:.3f}, Penalty: {penalty_cap:.3f}")
     print(f"DEBUG INCENTIVES: Cost scale factor: {cost_scale_factor:.3f}, Distance scale factor: {distance_scale_factor:.3f}")

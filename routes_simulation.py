@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, g
 from simulation import generate_plots
 from simulation_random import find_optimum_random
+from config import SIMULATION_TRIALS, SIMULATION_SUBSIDY_CAP, SIMULATION_PENALTY_CAP, SIMULATION_MAX_EPOCHS
 
 sim_bp = Blueprint('simulation', __name__)
 
@@ -18,10 +19,10 @@ def simulate_random():
         rows = data.get('rows', [])
         P_baseline = float(data.get('P_baseline', 100.0))
         P_target = float(data.get('P_target', 85.0))
-        max_epochs = int(data.get('max_epochs', 50))
-        subsidy_cap = float(data.get('subsidy_cap', 0.15))
-        penalty_cap = float(data.get('penalty_cap', 0.10))
-        trials = int(data.get('trials', 10000))
+        max_epochs = int(data.get('max_epochs', SIMULATION_MAX_EPOCHS))
+        subsidy_cap = float(data.get('subsidy_cap', SIMULATION_SUBSIDY_CAP))
+        penalty_cap = float(data.get('penalty_cap', SIMULATION_PENALTY_CAP))
+        trials = int(data.get('trials', SIMULATION_TRIALS))
         seed = data.get('seed')
         if seed is not None:
             seed = int(seed)

@@ -90,8 +90,8 @@ For each of the 5000 trials:
 
 Generate Random Incentives:
 
-For strategies with delta < 0 (helpful): Apply random subsidies between 0 and subsidy_cap (0.08)
-For strategies with delta > 0 (harmful): Apply random penalties between 0 and penalty_cap (0.04)
+For strategies with delta < 0 (helpful): Apply random subsidies between 0 and subsidy_cap (0.15)
+For strategies with delta > 0 (harmful): Apply random penalties between 0 and penalty_cap (0.10)
 Modify Costs:
 
 Subsidies reduce costs, penalties increase costs

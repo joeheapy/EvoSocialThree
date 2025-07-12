@@ -8,9 +8,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Tuple
 from api.openai.infer_payoffs import ActorEntry
-
-# Constants
-EPSILON = 0.01  # tiny positive constant to avoid zero payoffs and divide by zero errors later.
+from config import SIMULATION_EPSILON
 
 
 def convert_to_dataframes(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -104,7 +102,7 @@ def add_payoffs_to_actors(actors: List[ActorEntry], strategies_df: pd.DataFrame)
                 payoff = strategies_df.loc[(g, k), 'payoff_epoch_0']
                 print(f"DEBUG: Found payoff for {strategy.id} at ({g},{k}): {payoff:.6f}")
             except KeyError:
-                payoff = EPSILON  # Fallback
+                payoff = SIMULATION_EPSILON # Fallback to epsilon if not found
                 print(f"DEBUG: KeyError for {strategy.id} at ({g},{k}), using EPSILON: {payoff:.6f}")
             
             # Create new strategy with payoff using model_copy with update
@@ -134,4 +132,3 @@ def process_payoffs_data(actors: List[ActorEntry]) -> Tuple[pd.DataFrame, pd.Dat
     updated_actors = add_payoffs_to_actors(actors, strategies_df_with_payoffs)
     
     return actors_df, strategies_df_with_payoffs, updated_actors
-

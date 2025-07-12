@@ -141,7 +141,7 @@
             class="analysis-button"
             id="simulationBtn"
           >
-            🎯 Run Random Incentive Search
+            Run Random Incentive Search
           </button>
           <div
             id="simulationStatus"
@@ -201,10 +201,6 @@
               rows: data.rows, // ✅ Use data.rows instead of undefined extractedRows
               P_baseline: data.P_baseline, // ✅ Use data from API
               P_target: data.P_target, // ✅ Use data from API
-              max_epochs: 100,
-              trials: 10000,
-              subsidy_cap: 0.15,
-              penalty_cap: 0.1,
             }),
           })
 
