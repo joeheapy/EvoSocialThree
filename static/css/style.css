@@ -1013,3 +1013,22 @@ p {
   border-color: #f5c6cb;
   color: #721c24;
 }
+
+.matrix-cell {
+  font-weight: 500;
+  font-family: monospace;
+}
+
+.subsidy-cell {
+  background-color: rgba(0, 255, 0, 0.1);
+  color: #155724; /* Dark Green */
+}
+
+.penalty-cell {
+  background-color: rgba(255, 0, 0, 0.1);
+  color: #721c24; /* Dark Red */
+}
+
+.actor-name {
+  text-align: left !important;
+}

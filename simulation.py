@@ -240,15 +240,12 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
     share = initial_shares.copy()
     t_hit = None
     
-    
     for t in range(max_epochs):
         # Calculate current headline metric in normalized space
         P_t_normalized = norm_baseline + np.sum(normalized_delta * share)
         
         # Convert back to original scale for reporting and target checking
-        normalized_change = P_t_normalized - norm_baseline
-        original_change = normalized_change / scale_factor
-        P_t = P_baseline + original_change
+        P_t = P_baseline + np.sum(delta_raw * share)
         P_series.append(float(P_t))
         
         # Calculate adaptive learning rate based on distance to target (in original scale)
@@ -268,18 +265,13 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
         if t % 10 == 0:
             print(f"DEBUG SIMULATION: Epoch {t}, P_t={P_t:.0f} (normalized: {P_t_normalized:.3f})")
             print(f"  Distance to target: {distance_to_target:.1f}, Learning rate: {learning_rate:.4f}")
-            print(f"  Normalized change: {normalized_change:.3f}, Original change: {original_change:.1f}")
         
-        # Calculate payoffs using normalized values
-        payoff = compute_payoff_simple(normalized_payoff_base, normalized_incentives)
+        # --- MODIFICATION 1: Decay the influence of base payoff over time ---
+        # The influence of the initial payoff guess from the LLM will decrease over epochs.
+        decay_factor = np.exp(-t / (max_epochs / 4)) # Decays over ~1/4 of the simulation time
         
-        # Additional debug info
-        if t % 10 == 0:
-            print(f"  Sample payoffs: {payoff[0, :].round(4)}")
-            print(f"  Sample shares: {share[0, :].round(4)}")
-            avg_payoff = np.mean(payoff[0, :])
-            fitness_diffs = payoff[0, :] - avg_payoff
-            print(f"  Fitness diffs: {fitness_diffs.round(6)}")
+        # Calculate payoffs using normalized values, with decayed base payoff
+        payoff = (normalized_payoff_base * decay_factor) + normalized_incentives
         
         # Store current state
         share_history[:, :, t] = share
@@ -302,8 +294,16 @@ def run_simulation(rows: List[List], P_baseline: float, P_target: float, max_epo
                 if abs(avg_payoff_g) > SIMULATION_EPSILON:
                     for k in range(K):
                         fitness_diff = payoff[g, k] - avg_payoff_g
-                        # Use adaptive learning rate and absolute value of avg_payoff_g for scaling
-                        new_share[g, k] = share[g, k] * (1 + learning_rate * fitness_diff / abs(avg_payoff_g))
+                        
+                        # --- MODIFICATION 2: Dampened replicator dynamics ---
+                        # This prevents strategies from being eliminated too quickly by adding a "gravity"
+                        # term that pulls shares back towards an equal distribution.
+                        # The dampening is stronger in early epochs and fades over time.
+                        dampening_strength = 0.1 * decay_factor 
+                        gravity_term = (1/K - share[g, k])
+                        
+                        share_change = learning_rate * (share[g, k] * fitness_diff / abs(avg_payoff_g) + dampening_strength * gravity_term)
+                        new_share[g, k] = share[g, k] + share_change
                         new_share[g, k] = max(new_share[g, k], SIMULATION_EPSILON)
                 
                 # Renormalize each actor's shares

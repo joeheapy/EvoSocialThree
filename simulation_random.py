@@ -28,14 +28,16 @@ def find_optimum_random(
     strategy_importance = np.abs(delta_raw) * initial_shares
     
     # OPTION D: Scale incentive caps based on cost magnitudes and target distance
-    avg_cost = np.mean(private_cost[private_cost > 0])
+    avg_cost = np.mean(private_cost[private_cost > 0]) if np.any(private_cost > 0) else 1.0
     target_distance = abs(P_target - P_baseline)
     
     # Scale caps based on average costs and target ambition
-    cost_scale_factor = max(1.0, avg_cost / 0.1)  # Scale up if costs are high
-    distance_scale_factor = max(1.0, target_distance / 10000)  # Scale up for ambitious targets
+    # If avg_cost is 0.1, factor is 1. If avg_cost is 10, factor is 100.
+    cost_scale_factor = max(1.0, avg_cost / 0.1)
+    # If target_distance is 10k, factor is 1. If 100k, factor is 10.
+    distance_scale_factor = max(1.0, target_distance / 10000)
     
-    # Adaptive caps - much higher than before
+    # Adaptive caps - can become much larger for large-scale problems
     adaptive_subsidy_cap = subsidy_cap * cost_scale_factor * distance_scale_factor * SIMULATION_ADAPTIVE_CAP_S_MULTIPLIER
     adaptive_penalty_cap = penalty_cap * cost_scale_factor * distance_scale_factor * SIMULATION_ADAPTIVE_CAP_P_MULTIPLIER
     
@@ -57,20 +59,22 @@ def find_optimum_random(
             for k in range(K):
                 importance_weight = strategy_importance[g, k] + 0.1
                 
-                if target_direction and delta_raw[g, k] < 0:  # Want to reduce P
-                    # Much higher subsidies for helpful strategies
-                    max_subsidy = adaptive_subsidy_cap * min(3.0, importance_weight * 8.0)
-                    pi_sub[g, k] = rng.uniform(adaptive_subsidy_cap * 0.2, min(max_subsidy, adaptive_subsidy_cap * 2.0))
-                elif target_direction and delta_raw[g, k] > 0:  # Penalize harmful
-                    # Much higher penalties for harmful strategies
-                    max_penalty = adaptive_penalty_cap * min(3.0, importance_weight * 6.0)
-                    pi_pen[g, k] = rng.uniform(adaptive_penalty_cap * 0.1, min(max_penalty, adaptive_penalty_cap * 2.0))
-                elif not target_direction and delta_raw[g, k] > 0:  # Want to increase P
-                    max_subsidy = adaptive_subsidy_cap * importance_weight * 2.0
-                    pi_sub[g, k] = rng.uniform(0, min(max_subsidy, adaptive_subsidy_cap))
-                elif not target_direction and delta_raw[g, k] < 0:
-                    max_penalty = adaptive_penalty_cap * importance_weight * 2.0
-                    pi_pen[g, k] = rng.uniform(0, min(max_penalty, adaptive_penalty_cap))
+                # Determine if a strategy is helpful or harmful based on target direction
+                is_helpful = (target_direction and delta_raw[g, k] < 0) or \
+                             (not target_direction and delta_raw[g, k] > 0)
+                is_harmful = (target_direction and delta_raw[g, k] > 0) or \
+                             (not target_direction and delta_raw[g, k] < 0)
+
+                if is_helpful:
+                    # Generate a subsidy for helpful strategies
+                    # The random subsidy is scaled by the adaptive cap and importance
+                    max_s = adaptive_subsidy_cap * importance_weight * 5.0
+                    pi_sub[g, k] = rng.uniform(0, min(max_s, adaptive_subsidy_cap * 2.0))
+                elif is_harmful:
+                    # Generate a penalty for harmful strategies
+                    # The random penalty is scaled by the adaptive cap and importance
+                    max_p = adaptive_penalty_cap * importance_weight * 4.0
+                    pi_pen[g, k] = rng.uniform(0, min(max_p, adaptive_penalty_cap * 2.0))
         
         # Net incentives for simulation
         incentive_net = pi_sub - pi_pen

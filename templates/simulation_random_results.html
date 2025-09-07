@@ -40,41 +40,40 @@
     </div>
 
     {% if g.incentive_matrix is not none %}
-    <div class="incentive-matrix">
-      <h3>Incentive Matrix (π)</h3>
-      <table class="matrix-table">
-        <thead>
-          <tr>
-            <th>Actor</th>
-            <th>Strategy 1</th>
-            <th>Strategy 2</th>
-            <th>Strategy 3</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for g_idx in range(g.sector_names|length) %}
-          <tr>
-            <td class="actor-name">
-              {{ g.sector_names[g_idx][:15] }}{% if g.sector_names[g_idx]|length
-              > 15 %}...{% endif %}
-            </td>
-            {% for k_idx in range(g.incentive_matrix.shape[1]) %} {% set
-            incentive_value = g.incentive_matrix[g_idx][k_idx] %}
-            <td
-              class="matrix-cell {% if incentive_value > 0 %}subsidy-cell{% elif incentive_value < 0 %}penalty-cell{% endif %}"
-              data-value="{{ incentive_value }}"
-            >
-              {{ "%.4f"|format(incentive_value) }}
-            </td>
+    <div class="payoffs-table-container">
+      <div class="incentive-matrix">
+        <h3>Incentive Matrix (π)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Actor</th>
+              <th>Strategy 1</th>
+              <th>Strategy 2</th>
+              <th>Strategy 3</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for g_idx in range(g.sector_names|length) %}
+            <tr>
+              <td class="actor-name">{{ g.sector_names[g_idx] }}</td>
+              {% for k_idx in range(g.incentive_matrix.shape[1]) %} {% set
+              incentive_value = g.incentive_matrix[g_idx][k_idx] %}
+              <td
+                class="matrix-cell {% if incentive_value > 0 %}subsidy-cell{% elif incentive_value < 0 %}penalty-cell{% endif %}"
+                data-value="{{ incentive_value }}"
+              >
+                {{ "%.4f"|format(incentive_value) }}
+              </td>
+              {% endfor %}
+            </tr>
             {% endfor %}
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <p class="matrix-legend">
-        <span class="subsidy-legend">Green = Subsidy (positive values)</span>
-        <span class="penalty-legend">Red = Penalty (negative values)</span>
-      </p>
+          </tbody>
+        </table>
+        <p class="matrix-legend">
+          <span class="subsidy-legend">Green = Subsidy (positive values)</span>
+          <span class="penalty-legend">Red = Penalty (negative values)</span>
+        </p>
+      </div>
     </div>
     {% endif %}
 
