@@ -34,7 +34,8 @@ def simulate_random():
             "trials": trials,
             "max_epochs": max_epochs,
             "subsidy_cap": subsidy_cap,
-            "penalty_cap": penalty_cap
+            "penalty_cap": penalty_cap,
+            "rows": rows  # Pass rows data to the template
         }
         
         if not rows:
