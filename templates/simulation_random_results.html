@@ -2,16 +2,8 @@
 <div id="simulation-results-wrapper">
   <div class="simulation-results-container">
     <div class="simulation-summary">
-      <h3>Random Incentive Search Results</h3>
+      <h3>Best Attempt</h3>
       <div class="summary-stats">
-        <div class="stat-item">
-          <span class="stat-label">Search Outcome:</span>
-          <span class="stat-value">
-            {% if g.random_result.t_hit is not none %} Solution found at epoch
-            {{ g.random_result.t_hit }} {% else %} Best attempt shown (target
-            not reached in {{ g.simulation_params.trials }} trials) {% endif %}
-          </span>
-        </div>
         <div class="stat-item">
           <span class="stat-label">Total Budget:</span>
           <span class="stat-value budget-highlight"
